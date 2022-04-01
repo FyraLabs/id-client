@@ -9,11 +9,15 @@ import {
   Image,
   styled,
   Link,
+  Loading,
 } from "@nextui-org/react";
 import NextLink from "next/link";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useMutation } from "react-query";
+import { api } from "../util/api";
+import axios from "axios";
 
 const Form = styled("form");
 
@@ -37,7 +41,11 @@ const schema = z.object({
 });
 
 const Login = () => {
-  const { register, handleSubmit, formState, control } = useForm<LoginForm>({
+  const { isLoading, mutateAsync } = useMutation(
+    async (data: { email: string; password: string }) =>
+      (await api.post("/user/login", data)).data
+  );
+  const { register, handleSubmit, formState, setError } = useForm<LoginForm>({
     resolver: zodResolver(schema),
     mode: "onTouched",
   });
@@ -60,7 +68,29 @@ const Login = () => {
         >
           <Form
             css={{ margin: "auto", display: "flex", flexDirection: "column" }}
-            onSubmit={handleSubmit((data) => console.log(data))}
+            onSubmit={handleSubmit(async (data) => {
+              try {
+                await mutateAsync(data);
+              } catch (e) {
+                if (axios.isAxiosError(e)) {
+                  switch (e.response?.status) {
+                    case 404: {
+                      setError("email", {
+                        message: "A user with that email doesn't exist",
+                      });
+                      break;
+                    }
+
+                    case 401: {
+                      setError("password", {
+                        message: "Incorrect password",
+                      });
+                      break;
+                    }
+                  }
+                }
+              }
+            })}
           >
             <div>
               <Text h1 size={35}>
@@ -104,10 +134,10 @@ const Login = () => {
             <Button
               css={{ maxW: 500 }}
               type="submit"
-              flat={!formState.isValid}
-              disabled={!formState.isValid}
+              flat={!isLoading && !formState.isValid}
+              disabled={!formState.isValid || isLoading}
             >
-              Login
+              {isLoading ? <Loading color="white" size="sm" /> : "Login"}
             </Button>
             <Spacer y={0.5} />
             <NextLink href="/register">

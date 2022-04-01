@@ -10,11 +10,15 @@ import {
   Image,
   styled,
   Link,
+  Loading,
 } from "@nextui-org/react";
 import NextLink from "next/link";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useMutation } from "react-query";
+import { api } from "../util/api";
+import axios from "axios";
 
 const Form = styled("form");
 
@@ -45,10 +49,15 @@ const schema = z.object({
 });
 
 const Register = () => {
-  const { register, handleSubmit, formState, control } = useForm<RegisterForm>({
-    resolver: zodResolver(schema),
-    mode: "onTouched",
-  });
+  const { isLoading, mutateAsync } = useMutation(
+    async (data: { name: string; email: string; password: string }) =>
+      (await api.post("/user/register", data)).data
+  );
+  const { register, handleSubmit, formState, control, setError } =
+    useForm<RegisterForm>({
+      resolver: zodResolver(schema),
+      mode: "onTouched",
+    });
 
   return (
     <Container>
@@ -68,7 +77,22 @@ const Register = () => {
         >
           <Form
             css={{ margin: "auto", display: "flex", flexDirection: "column" }}
-            onSubmit={handleSubmit((data) => console.log(data))}
+            onSubmit={handleSubmit(async (data) => {
+              try {
+                await mutateAsync(data);
+              } catch (e) {
+                if (axios.isAxiosError(e)) {
+                  switch (e.response?.status) {
+                    case 409: {
+                      setError("email", {
+                        message: "A user with that email already exists",
+                      });
+                      break;
+                    }
+                  }
+                }
+              }
+            })}
           >
             <div>
               <Text h1 size={35}>
@@ -143,10 +167,10 @@ const Register = () => {
             <Button
               css={{ maxW: 500 }}
               type="submit"
-              flat={!formState.isValid}
-              disabled={!formState.isValid}
+              flat={!isLoading && !formState.isValid}
+              disabled={!formState.isValid || isLoading}
             >
-              Register
+              {isLoading ? <Loading color="white" size="sm" /> : "Register"}
             </Button>
             <Spacer y={0.5} />
             <NextLink href="/login">
