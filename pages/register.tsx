@@ -155,7 +155,7 @@ const Register = () => {
                   <Checkbox
                     checked={field.value}
                     name={field.name}
-                    onBlur={field.onBlur}
+                    onClick={() => field.onBlur()}
                     onChange={(e) => field.onChange(e.target.checked)}
                   >
                     <Text>
