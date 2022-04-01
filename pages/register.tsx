@@ -87,10 +87,12 @@ const Register = () => {
                       setError("email", {
                         message: "A user with that email already exists",
                       });
-                      break;
+                      return;
                     }
                   }
                 }
+
+                throw e;
               }
             })}
           >

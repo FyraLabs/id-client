@@ -78,17 +78,19 @@ const Login = () => {
                       setError("email", {
                         message: "A user with that email doesn't exist",
                       });
-                      break;
+                      return;
                     }
 
                     case 401: {
                       setError("password", {
                         message: "Incorrect password",
                       });
-                      break;
+                      return;
                     }
                   }
                 }
+
+                throw e;
               }
             })}
           >
