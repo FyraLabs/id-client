@@ -12,7 +12,7 @@ import {
   Link,
 } from "@nextui-org/react";
 import NextLink from "next/link";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
@@ -26,15 +26,28 @@ interface RegisterForm {
 }
 
 const schema = z.object({
-  name: z.string().min(1).max(256),
-  email: z.string().email().min(5).max(256),
-  password: z.string().min(8).max(256),
-  agree: z.literal(true),
+  name: z
+    .string()
+    .min(1, "Name must be at least 1 character")
+    .max(256, "Name must be at most 256 characters"),
+  email: z
+    .string()
+    .email("Email must be a valid email address")
+    .min(5)
+    .min(1, "Email must be at least 5 characters")
+    .max(256)
+    .max(256, "Email must be at most 256 characters"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(256, "Password must be at most 256 characters"),
+  agree: z.boolean().refine((v) => !!v),
 });
 
 const Register = () => {
-  const { register, handleSubmit, formState } = useForm<RegisterForm>({
+  const { register, handleSubmit, formState, control } = useForm<RegisterForm>({
     resolver: zodResolver(schema),
+    mode: "onTouched",
   });
 
   return (
@@ -108,16 +121,30 @@ const Register = () => {
               {...register("password")}
             />
             <Spacer y={1.5} />
-            <Checkbox {...register("agree")}>
-              <Text color={formState.errors.agree ? "error" : undefined}>
-                I agree to the <Link href="#">Terms & Conditions</Link>
-              </Text>
-            </Checkbox>
+            <Controller
+              name="agree"
+              control={control}
+              render={({ field }) => {
+                return (
+                  <Checkbox
+                    checked={field.value}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                  >
+                    <Text>
+                      I agree to the <Link href="#">Terms & Conditions</Link>
+                    </Text>
+                  </Checkbox>
+                );
+              }}
+            />
             <Spacer y={1.5} />
             <Button
               css={{ maxW: 500 }}
-              // disabled={!formState.isValid}
               type="submit"
+              flat={!formState.isValid}
+              disabled={!formState.isValid}
             >
               Register
             </Button>
