@@ -145,12 +145,7 @@ const Login = () => {
               {...register("password")}
             />
             <Spacer y={1.5} />
-            <Button
-              css={{ maxW: 500 }}
-              type="submit"
-              flat={!isLoading && !formState.isValid}
-              disabled={!formState.isValid || isLoading}
-            >
+            <Button type="submit" disabled={!formState.isValid || isLoading}>
               {isLoading ? <Loading color="white" size="sm" /> : "Login"}
             </Button>
             <Spacer y={0.5} />

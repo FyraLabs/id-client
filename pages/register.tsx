@@ -178,12 +178,7 @@ const Register = () => {
               }}
             />
             <Spacer y={1.5} />
-            <Button
-              css={{ maxW: 500 }}
-              type="submit"
-              flat={!isLoading && !formState.isValid}
-              disabled={!formState.isValid || isLoading}
-            >
+            <Button type="submit" disabled={!formState.isValid || isLoading}>
               {isLoading ? <Loading color="white" size="sm" /> : "Register"}
             </Button>
             <Spacer y={0.5} />
