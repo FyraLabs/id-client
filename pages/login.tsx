@@ -18,6 +18,9 @@ import { z } from "zod";
 import { useMutation } from "react-query";
 import { api } from "../util/api";
 import axios from "axios";
+import { Auth } from "../util/auth";
+import { useEffect } from "react";
+import { useRouter } from "next/router";
 
 const Form = styled("form");
 
@@ -43,12 +46,19 @@ const schema = z.object({
 const Login = () => {
   const { isLoading, mutateAsync } = useMutation(
     async (data: { email: string; password: string }) =>
-      (await api.post("/user/login", data)).data
+      (await api.post<{ token: string }>("/user/login", data)).data
   );
   const { register, handleSubmit, formState, setError } = useForm<LoginForm>({
     resolver: zodResolver(schema),
     mode: "onTouched",
   });
+  const router = useRouter();
+  const { token, setToken } = Auth.useContainer();
+
+  useEffect(() => {
+    if (token) router.push("/dashboard");
+  }, []);
+  if (token) return <></>;
 
   return (
     <Container>
@@ -70,7 +80,9 @@ const Login = () => {
             css={{ margin: "auto", display: "flex", flexDirection: "column" }}
             onSubmit={handleSubmit(async (data) => {
               try {
-                await mutateAsync(data);
+                const res = await mutateAsync(data);
+                setToken(res.token);
+                router.push("/dashboard");
               } catch (e) {
                 if (axios.isAxiosError(e)) {
                   switch (e.response?.status) {
