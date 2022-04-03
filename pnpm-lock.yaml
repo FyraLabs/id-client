@@ -11,6 +11,7 @@ specifiers:
   '@stitches/react': ^1.2.7
   '@types/react': ^17.0.43
   axios: ^0.26.1
+  dayjs: ^1.11.0
   eslint: 8.12.0
   eslint-config-next: 12.1.4
   next: 12.1.4
@@ -31,6 +32,7 @@ dependencies:
   '@nextui-org/react': 1.0.5-beta.5_react-dom@18.0.0+react@18.0.0
   '@stitches/react': 1.2.7_react@18.0.0
   axios: 0.26.1
+  dayjs: 1.11.0
   next: 12.1.4_react-dom@18.0.0+react@18.0.0
   react: 18.0.0
   react-dom: 18.0.0_react@18.0.0
@@ -1128,6 +1130,10 @@ packages:
   /damerau-levenshtein/1.0.8:
     resolution: {integrity: sha512-sdQSFB7+llfUcQHUQO3+B8ERRj0Oa4w9POWMI/puGtuf7gFywGmkaLCElnudfTiKZV+NvHqL0ifzdrI8Ro7ESA==}
     dev: true
+
+  /dayjs/1.11.0:
+    resolution: {integrity: sha512-JLC809s6Y948/FuCZPm5IX8rRhQwOiyMb2TfVVQEixG7P8Lm/gt5S7yoQZmC8x1UehI9Pb7sksEt4xx14m+7Ug==}
+    dev: false
 
   /debug/2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
