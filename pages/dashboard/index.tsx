@@ -266,10 +266,12 @@ const SessionRow: FC<{
             (osName ?? "Unknown") +
             (osVersion ? " " + osVersion : "")}
           {id === sessionID ? (
-            <Text color="success" span>
-              {" "}
-              • This Device
-            </Text>
+            <>
+              {" • "}
+              <Text color="success" span>
+                This Device
+              </Text>
+            </>
           ) : (
             <></>
           )}
