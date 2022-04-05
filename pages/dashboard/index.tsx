@@ -1,10 +1,13 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faComputer,
+  faDesktop,
+  faDesktopAlt,
   faFingerprint,
   faKey,
   faMobileAlt,
   faSave,
+  faTabletAlt,
   faWarning,
 } from "@fortawesome/free-solid-svg-icons";
 import {
@@ -31,10 +34,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/router";
 import { Auth } from "../../util/auth";
 import { FC, Suspense, useEffect, useMemo } from "react";
-import { useQuery } from "react-query";
+import { useMutation, useQuery, useQueryClient } from "react-query";
 import { api } from "../../util/api";
 import dynamic from "next/dynamic";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
+import calendarPlugin from "dayjs/plugin/calendar";
+
+dayjs.extend(calendarPlugin);
 
 const HeadingRow = styled("div");
 
@@ -181,30 +187,150 @@ const BasicInfo = () => {
   );
 };
 
-const SessionRow: FC<{}> = () => {
+type DeviceType = "desktop" | "mobile" | "tablet";
+
+const SessionRow: FC<{
+  id: string;
+  ip: string;
+  lastUsedAt: Dayjs;
+  createdAt: Dayjs;
+  userAgent: string;
+  country?: string;
+  city?: string;
+  subdivision?: string;
+  device?: DeviceType;
+  osName?: string;
+  osVersion?: string;
+  uaName?: string;
+  uaVersion?: string;
+}> = ({
+  id,
+  ip,
+  lastUsedAt,
+  createdAt,
+  userAgent,
+  country,
+  city,
+  subdivision,
+  device,
+  osName,
+  osVersion,
+  uaName,
+  uaVersion,
+}) => {
+  const { token, sessionID, setToken } = Auth.useContainer();
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const revokeSession = useMutation(
+    async () =>
+      (
+        await api.delete("/user/me/session/" + id, {
+          headers: {
+            Authorization: token!,
+          },
+        })
+      ).data,
+    {
+      onSuccess: () => {
+        if (id === sessionID) {
+          setToken(null);
+          return router.replace("/login");
+        }
+
+        // TODO: Make this cleaner than a refresh
+        queryClient.refetchQueries(["me", "session"]);
+      },
+    }
+  );
+
   return (
     <Collapse
       contentLeft={
-        <FontAwesomeIcon icon={faMobileAlt} fixedWidth fontSize={20} />
+        <FontAwesomeIcon
+          icon={
+            device === "desktop"
+              ? faDesktopAlt
+              : device === "mobile"
+              ? faMobileAlt
+              : faTabletAlt
+          }
+          fixedWidth
+          fontSize={20}
+        />
       }
-      title={<Text weight="bold">iPhone</Text>}
-      subtitle="Los Angeles, CA"
+      title={
+        <Text weight="bold">
+          {(uaName ?? "Unknown") +
+            (uaVersion ? " " + uaVersion : "") +
+            " on " +
+            (osName ?? "Unknown") +
+            (osVersion ? " " + osVersion : "")}
+          {id === sessionID ? (
+            <Text color="success" span>
+              {" "}
+              • This Device
+            </Text>
+          ) : (
+            <></>
+          )}
+        </Text>
+      }
+      subtitle={
+        (city ?? "Unknown") +
+        ", " +
+        (subdivision ? subdivision + ", " : "") +
+        (country ?? "Unknown")
+      }
     >
       <Row>
         <Col>
           <Text weight="bold">IP</Text>
-          <Text>1.1.1.1</Text>
+          <Text>{ip}</Text>
         </Col>
         <Col>
           <Text weight="bold">Last Used</Text>
-          <Text>Yesterday, at 7:08am</Text>
+          <Text>{lastUsedAt.calendar()}</Text>
+        </Col>
+      </Row>
+      <Spacer y={1} />
+      <Row>
+        <Col>
+          <Text weight="bold">Created</Text>
+          <Text>{createdAt.calendar()}</Text>
+        </Col>
+        <Col>
+          <Text weight="bold">User Agent</Text>
+          <Tooltip content={userAgent}>
+            <Text
+              css={{
+                textOverflow: "ellipsis",
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                maxWidth: "200px",
+              }}
+            >
+              {userAgent}
+            </Text>
+          </Tooltip>
         </Col>
       </Row>
 
       <Spacer y={1} />
 
-      <Button color="error" css={{ w: "100%" }} auto>
-        Revoke Session
+      <Button
+        color="error"
+        css={{ w: "100%" }}
+        auto
+        disabled={revokeSession.isLoading}
+        onClick={() => revokeSession.mutate()}
+      >
+        {revokeSession.isLoading ? (
+          <Loading color="white" size="sm" />
+        ) : id === sessionID ? (
+          "Log Out"
+        ) : (
+          "Revoke Session"
+        )}
       </Button>
     </Collapse>
   );
@@ -224,6 +350,14 @@ const SessionInfo = () => {
             userAgent: string;
             createdAt: string;
             lastUsedAt: string;
+            country?: string;
+            city?: string;
+            subdivision?: string;
+            device?: DeviceType;
+            osName?: string;
+            osVersion?: string;
+            uaName?: string;
+            uaVersion?: string;
           }[]
         >("/user/me/session", {
           headers: {
@@ -240,13 +374,11 @@ const SessionInfo = () => {
     () =>
       sessions.data?.map((session) => ({
         ...session,
-        // createdAt: dayjs.(session.createdAt),
-        // lastUsedAt: dayjs(session.lastUsedAt),
+        createdAt: dayjs(session.createdAt),
+        lastUsedAt: dayjs(session.lastUsedAt),
       })),
     [sessions]
   );
-
-  console.log(sessionData);
 
   if (sessions.isLoading) return <Loading>Loading Sessions...</Loading>;
   if (sessions.isError)
@@ -273,7 +405,16 @@ const SessionInfo = () => {
         Sessions
       </Text>
       <Collapse.Group css={{ p: 0 }}>
-        <SessionRow />
+        {sessionData?.map((session) => (
+          <SessionRow
+            key={session.id}
+            {...session}
+            ip={session.ip}
+            lastUsedAt={session.lastUsedAt}
+            createdAt={session.createdAt}
+            userAgent={session.userAgent}
+          />
+        ))}
       </Collapse.Group>
     </Card>
   );

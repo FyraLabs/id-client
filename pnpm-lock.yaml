@@ -15,6 +15,7 @@ specifiers:
   dayjs: ^1.11.0
   eslint: 8.12.0
   eslint-config-next: 12.1.4
+  jwt-decode: ^3.1.2
   next: 12.1.4
   react: 18.0.0
   react-dom: 18.0.0
@@ -35,6 +36,7 @@ dependencies:
   '@stitches/react': 1.2.7_react@18.0.0
   axios: 0.26.1
   dayjs: 1.11.0
+  jwt-decode: 3.1.2
   next: 12.1.4_react-dom@18.0.0+react@18.0.0
   react: 18.0.0
   react-dom: 18.0.0_react@18.0.0
@@ -1856,6 +1858,10 @@ packages:
       array-includes: 3.1.4
       object.assign: 4.1.2
     dev: true
+
+  /jwt-decode/3.1.2:
+    resolution: {integrity: sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==}
+    dev: false
 
   /language-subtag-registry/0.3.21:
     resolution: {integrity: sha512-L0IqwlIXjilBVVYKFT37X9Ih11Um5NEl9cbJIuU/SwP/zEEAbBPOnEeeuxVMf45ydWQRDQN3Nqc96OgbH1K+Pg==}
