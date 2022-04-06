@@ -1,7 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faComputer,
-  faDesktop,
   faDesktopAlt,
   faFingerprint,
   faKey,
@@ -33,16 +31,15 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/router";
 import { Auth } from "../../util/auth";
-import { FC, Suspense, useEffect, useMemo } from "react";
+import { FC, Suspense, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { api } from "../../util/api";
 import dynamic from "next/dynamic";
 import dayjs, { Dayjs } from "dayjs";
 import calendarPlugin from "dayjs/plugin/calendar";
+import axios from "axios";
 
 dayjs.extend(calendarPlugin);
-
-const HeadingRow = styled("div");
 
 interface UpdatePasswordForm {
   currentPassword: string;
@@ -60,17 +57,48 @@ const schema = z.object({
     .max(256, "Password must be at most 256 characters"),
 });
 
-const UpdatePassword = () => {
+const UpdatePassword: FC<{ closeModal: () => void }> = ({ closeModal }) => {
   const { register, handleSubmit, formState, setError } =
     useForm<UpdatePasswordForm>({
       resolver: zodResolver(schema),
       mode: "onTouched",
     });
 
-  const isLoading = false;
+  const { token } = Auth.useContainer();
+
+  const { isLoading, mutateAsync } = useMutation(
+    async (data: { currentPassword: string; newPassword: string }) =>
+      (
+        await api.post<{ token: string }>("/user/me/password", data, {
+          headers: {
+            Authorization: token!,
+          },
+        })
+      ).data
+  );
 
   return (
-    <form onSubmit={handleSubmit(() => {})}>
+    <form
+      onSubmit={handleSubmit(async (data) => {
+        try {
+          await mutateAsync(data);
+          closeModal();
+        } catch (e) {
+          if (axios.isAxiosError(e)) {
+            switch (e.response?.status) {
+              case 401: {
+                setError("currentPassword", {
+                  message: "Incorrect password",
+                });
+                return;
+              }
+            }
+          }
+
+          throw e;
+        }
+      })}
+    >
       <Modal.Header>
         <Text size={18} weight="bold">
           Update Password
@@ -80,7 +108,7 @@ const UpdatePassword = () => {
         <Input.Password
           label={"Current Password"}
           placeholder="••••••••"
-          // status={formState.errors.currentPassword ? "error" : undefined}
+          status={formState.errors.currentPassword ? "error" : undefined}
           bordered
           helperText={formState.errors.currentPassword?.message}
           helperColor="error"
@@ -89,7 +117,7 @@ const UpdatePassword = () => {
         <Input.Password
           label={"New Password"}
           placeholder="••••••••"
-          // status={formState.errors.newPassword ? "error" : undefined}
+          status={formState.errors.newPassword ? "error" : undefined}
           helperText={formState.errors.newPassword?.message}
           helperColor="error"
           bordered
@@ -99,7 +127,7 @@ const UpdatePassword = () => {
       </Modal.Body>
       <Modal.Footer>
         <Button type="submit" disabled={!formState.isValid || isLoading} auto>
-          Confirm
+          {isLoading ? <Loading color="white" size="sm" /> : "Confirm"}
         </Button>
       </Modal.Footer>
     </form>
@@ -107,7 +135,190 @@ const UpdatePassword = () => {
 };
 
 const Header = styled("div");
-const Circle = styled("div");
+const ClearButton = styled("button");
+
+const updateNameSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name must be at least 1 character")
+    .max(256, "Name must be at most 256 characters"),
+});
+
+const UpdateName: FC<{ name: string }> = ({ name }) => {
+  const { token } = Auth.useContainer();
+  const queryClient = useQueryClient();
+  const { register, handleSubmit, formState, setValue, watch } = useForm<{
+    name: string;
+  }>({
+    resolver: zodResolver(updateNameSchema),
+    mode: "onChange",
+  });
+
+  const updateName = useMutation(
+    async (name: string) =>
+      (
+        await api.patch(
+          "/user/me",
+          { name },
+          { headers: { Authorization: token! } }
+        )
+      ).data,
+    {
+      onSuccess: () => {
+        // TODO: Make this cleaner than a refresh
+        queryClient.refetchQueries(["me"]);
+      },
+    }
+  );
+
+  useEffect(() => {
+    setValue("name", name);
+  }, [name]);
+
+  return (
+    <form
+      onSubmit={handleSubmit(async (values) => {
+        updateName.mutate(values.name);
+      })}
+    >
+      <Input
+        label="Name"
+        placeholder="Lea Gray"
+        underlined
+        contentRightStyling={!formState.isValid}
+        status={formState.errors.name ? "error" : undefined}
+        helperColor="error"
+        helperText={formState.errors.name?.message}
+        contentRight={
+          watch("name") === name ? (
+            <></>
+          ) : updateName.isLoading ? (
+            <Loading size="xs" />
+          ) : formState.isValid ? (
+            <ClearButton
+              type="submit"
+              css={{
+                background: "transparent",
+                border: "none",
+                padding: 0,
+                margin: 0,
+                cursor: "pointer",
+              }}
+            >
+              <FontAwesomeIcon icon={faSave} />
+            </ClearButton>
+          ) : (
+            <></>
+          )
+        }
+        disabled={updateName.isLoading}
+        css={{ width: "100%" }}
+        {...register("name")}
+      />
+    </form>
+  );
+};
+
+const updateEmailSchema = z.object({
+  email: z
+    .string()
+    .email("Email must be a valid email address")
+    .min(5)
+    .min(1, "Email must be at least 5 characters")
+    .max(256)
+    .max(256, "Email must be at most 256 characters"),
+});
+
+const UpdateEmail: FC<{ email: string }> = ({ email }) => {
+  const { token } = Auth.useContainer();
+  const queryClient = useQueryClient();
+  const { register, handleSubmit, formState, setValue, watch, setError } =
+    useForm<{
+      email: string;
+    }>({
+      resolver: zodResolver(updateEmailSchema),
+      mode: "onTouched",
+    });
+
+  const updateEmail = useMutation(
+    async (email: string) =>
+      (
+        await api.patch(
+          "/user/me",
+          { email },
+          { headers: { Authorization: token! } }
+        )
+      ).data,
+    {
+      onSuccess: () => {
+        // TODO: Make this cleaner than a refresh
+        queryClient.refetchQueries(["me"]);
+      },
+    }
+  );
+
+  useEffect(() => {
+    setValue("email", email);
+  }, [email]);
+
+  return (
+    <form
+      onSubmit={handleSubmit(async (values) => {
+        try {
+          await updateEmail.mutateAsync(values.email);
+        } catch (e) {
+          if (axios.isAxiosError(e)) {
+            switch (e.response?.status) {
+              case 409: {
+                setError("email", {
+                  message: "A user with that email already exists",
+                });
+                return;
+              }
+            }
+          }
+
+          throw e;
+        }
+      })}
+    >
+      <Input
+        label="Email"
+        placeholder="lea@fyralabs.com"
+        underlined
+        status={formState.errors.email ? "error" : undefined}
+        helperColor="error"
+        helperText={formState.errors.email?.message}
+        contentRightStyling={!formState.isValid}
+        contentRight={
+          watch("email") === email ? (
+            <></>
+          ) : updateEmail.isLoading ? (
+            <Loading size="xs" />
+          ) : formState.isValid ? (
+            <ClearButton
+              type="submit"
+              css={{
+                background: "transparent",
+                border: "none",
+                padding: 0,
+                margin: 0,
+                cursor: "pointer",
+              }}
+            >
+              <FontAwesomeIcon icon={faSave} />
+            </ClearButton>
+          ) : (
+            <></>
+          )
+        }
+        disabled={updateEmail.isLoading}
+        css={{ width: "100%" }}
+        {...register("email")}
+      />
+    </form>
+  );
+};
 
 const BasicInfo = () => {
   const { token } = Auth.useContainer();
@@ -156,27 +367,16 @@ const BasicInfo = () => {
         blur
         {...bindings}
       >
-        <UpdatePassword />
+        <UpdatePassword closeModal={() => setVisible(false)} />
       </Modal>
       <Card>
         <Text size={20} weight="bold">
           Basic Info
         </Text>
         <Spacer y={0.5} />
-        <Input
-          label="Name"
-          placeholder="Lea Gray"
-          underlined
-          initialValue={user.data?.name}
-          contentRight={<Icon icon={faSave} />}
-        />
+        <UpdateName name={user.data!.name} />
         <Spacer y={1} />
-        <Input
-          label="Email"
-          placeholder="lea@fyralabs.com"
-          underlined
-          initialValue={user.data?.email}
-        />
+        <UpdateEmail email={user.data!.email} />
         <Spacer y={1} />
         <Button color="warning" flat onClick={() => setVisible(true)}>
           Update Password
@@ -508,7 +708,9 @@ const Main = () => {
           objectFit="cover"
           css={{ borderRadius: "50%", aspectRatio: "1 / 1", maxW: 125 }}
         />
-        <Text h1>Welcome Back, {user.data?.name}</Text>
+        <Text h1 css={{ textAlign: "center" }}>
+          Welcome Back, {user.data?.name}
+        </Text>
       </Header>
       {/* <Text size={30} weight="bold">
         General
