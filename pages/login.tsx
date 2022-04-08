@@ -64,6 +64,7 @@ const Login = () => {
     <Container>
       <Row css={{ minHeight: "100vh" }} align="center">
         <Col>
+          {/* NOTE: Accent #0070f3 */}
           <Image
             style={{ maxWidth: 500, margin: "auto" }}
             src="/space.svg"

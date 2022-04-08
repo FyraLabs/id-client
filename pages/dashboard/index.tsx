@@ -4,6 +4,7 @@ import {
   faFingerprint,
   faKey,
   faMobileAlt,
+  faPaperPlane,
   faSave,
   faTabletAlt,
   faWarning,
@@ -25,6 +26,7 @@ import {
   User,
   Image,
   Loading,
+  Link,
 } from "@nextui-org/react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -136,6 +138,8 @@ const UpdatePassword: FC<{ closeModal: () => void }> = ({ closeModal }) => {
 
 const Header = styled("div");
 const ClearButton = styled("button");
+
+const VerifyRow = styled("div");
 
 const updateNameSchema = z.object({
   name: z
@@ -326,7 +330,12 @@ const BasicInfo = () => {
     ["me"],
     async () =>
       (
-        await api.get<{ id: string; email: string; name: string }>("/user/me", {
+        await api.get<{
+          id: string;
+          email: string;
+          name: string;
+          emailVerified: boolean;
+        }>("/user/me", {
           headers: {
             Authorization: token!,
           },
@@ -337,7 +346,25 @@ const BasicInfo = () => {
     }
   );
 
-  const { setVisible, bindings } = useModal();
+  const updatePasswordModal = useModal();
+
+  const queryClient = useQueryClient();
+  const verifyEmail = useMutation(
+    async () =>
+      (
+        await api.post(
+          "/user/me/requestVerificationEmail",
+          {},
+          { headers: { Authorization: token! } }
+        )
+      ).data,
+    {
+      onSuccess: () => {
+        // TODO: Make this cleaner than a refresh
+        queryClient.refetchQueries(["me"]);
+      },
+    }
+  );
 
   if (user.isLoading) return <Loading>Loading Basic Profile...</Loading>;
   if (user.isError)
@@ -365,9 +392,11 @@ const BasicInfo = () => {
         aria-describedby="Update your password"
         closeButton
         blur
-        {...bindings}
+        {...updatePasswordModal.bindings}
       >
-        <UpdatePassword closeModal={() => setVisible(false)} />
+        <UpdatePassword
+          closeModal={() => updatePasswordModal.setVisible(false)}
+        />
       </Modal>
       <Card>
         <Text size={20} weight="bold">
@@ -377,8 +406,50 @@ const BasicInfo = () => {
         <UpdateName name={user.data!.name} />
         <Spacer y={1} />
         <UpdateEmail email={user.data!.email} />
+        <Spacer y={0.25} />
+        {!user.data?.emailVerified ? (
+          <VerifyRow
+            css={{ display: "flex", alignItems: "center", gap: "5px" }}
+          >
+            {verifyEmail.isSuccess ? (
+              <Text small color="success">
+                Sent verification email, check your inbox!
+              </Text>
+            ) : verifyEmail.isError ? (
+              <Text small color="error">
+                Unable to send verification email
+              </Text>
+            ) : verifyEmail.isLoading ? (
+              <Text small color="primary">
+                Not verified. Verify now?
+              </Text>
+            ) : (
+              <Link
+                onClick={() => {
+                  if (verifyEmail.isIdle) verifyEmail.mutate();
+                }}
+                css={{ display: "flex", alignItems: "center" }}
+              >
+                <Text small color="primary">
+                  Not verified. Verify now?
+                </Text>
+              </Link>
+            )}
+            {verifyEmail.isLoading ? (
+              <Loading size="md" type="points-opacity" />
+            ) : (
+              <></>
+            )}
+          </VerifyRow>
+        ) : (
+          <></>
+        )}
         <Spacer y={1} />
-        <Button color="warning" flat onClick={() => setVisible(true)}>
+        <Button
+          color="warning"
+          flat
+          onClick={() => updatePasswordModal.setVisible(true)}
+        >
           Update Password
         </Button>
         <Spacer y={0.5} />
@@ -632,7 +703,12 @@ const Main = () => {
     ["me"],
     async () =>
       (
-        await api.get<{ id: string; email: string; name: string }>("/user/me", {
+        await api.get<{
+          id: string;
+          email: string;
+          name: string;
+          emailVerified: boolean;
+        }>("/user/me", {
           headers: {
             Authorization: token!,
           },
