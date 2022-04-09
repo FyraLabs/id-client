@@ -168,7 +168,7 @@ const Register = () => {
                     checked={field.value}
                     name={field.name}
                     onClick={() => field.onBlur()}
-                    onChange={(e) => field.onChange(e.target.checked)}
+                    onChange={(e) => field.onChange(e.valueOf())}
                   >
                     <Text>
                       I agree to the <Link href="#">Terms & Conditions</Link>
