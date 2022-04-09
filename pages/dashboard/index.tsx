@@ -504,6 +504,7 @@ const SessionRow: FC<{
     {
       onSuccess: () => {
         if (id === sessionID) {
+          queryClient.clear();
           setToken(null);
           return router.replace("/login");
         }
@@ -693,6 +694,46 @@ const SessionInfo = () => {
   );
 };
 
+const LogOut = () => {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const { sessionID, token, setToken } = Auth.useContainer();
+
+  const revokeSession = useMutation(
+    async () =>
+      (
+        await api.delete("/user/me/session/" + sessionID, {
+          headers: {
+            Authorization: token!,
+          },
+        })
+      ).data,
+    {
+      onSuccess: () => {
+        queryClient.clear();
+        setToken(null);
+        return router.replace("/login");
+      },
+    }
+  );
+
+  return (
+    <Button
+      color="error"
+      css={{ w: "100%" }}
+      auto
+      disabled={revokeSession.isLoading}
+      onClick={() => revokeSession.mutate()}
+    >
+      {revokeSession.isLoading ? (
+        <Loading color="white" size="sm" />
+      ) : (
+        "Log Out"
+      )}
+    </Button>
+  );
+};
+
 const Error = styled("div");
 const Icon = styled(FontAwesomeIcon);
 
@@ -839,6 +880,8 @@ const Main = () => {
         </Collapse.Group>
         <Spacer y={0.5} />
       </Card>
+
+      <LogOut />
     </Container>
   );
 };
