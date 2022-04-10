@@ -14,6 +14,7 @@ const queryClient = new QueryClient();
 const MyApp = ({ Component, pageProps }: AppProps) => {
   return (
     <Auth.Provider>
+      {/* @ts-ignore */}
       <QueryClientProvider client={queryClient}>
         <NextUIProvider theme={darkTheme}>
           <Component {...pageProps} />
