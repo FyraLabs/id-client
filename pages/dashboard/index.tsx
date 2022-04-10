@@ -4,7 +4,7 @@ import {
   faFingerprint,
   faKey,
   faMobileAlt,
-  faPaperPlane,
+  faPerson,
   faSave,
   faTabletAlt,
   faWarning,
@@ -446,7 +446,7 @@ const BasicInfo = () => {
         )}
         <Spacer y={1} />
         <Button
-          color="warning"
+          color="primary"
           flat
           onClick={() => updatePasswordModal.setVisible(true)}
         >
@@ -540,7 +540,7 @@ const SessionRow: FC<{
           {id === sessionID ? (
             <>
               {" • "}
-              <Text color="success" span>
+              <Text color="primary" span>
                 This Device
               </Text>
             </>
@@ -719,11 +719,12 @@ const LogOut = () => {
 
   return (
     <Button
-      color="error"
+      color="secondary"
       css={{ w: "100%" }}
       auto
       disabled={revokeSession.isLoading}
       onClick={() => revokeSession.mutate()}
+      flat
     >
       {revokeSession.isLoading ? (
         <Loading color="white" size="sm" />
@@ -740,6 +741,7 @@ const Icon = styled(FontAwesomeIcon);
 const Main = () => {
   const router = useRouter();
   const { token } = Auth.useContainer();
+  const [updateMessage, setUpdateMessage] = useState("");
   const user = useQuery(
     ["me"],
     async () =>
@@ -762,6 +764,17 @@ const Main = () => {
 
   useEffect(() => {
     if (!token) router.push("/login");
+
+    let items: string[] = [
+      "Syncing the databases",
+      "Aquiring the companies",
+      "Getting users on the cashapp",
+      "Writing code",
+      "Racking up HR Complaints",
+      "Attaining the bag",
+    ];
+
+    setUpdateMessage(items[Math.floor(Math.random() * items.length)]);
   }, []);
 
   if (!token) return <></>;
@@ -821,12 +834,20 @@ const Main = () => {
         }}
       >
         <Image
-          src="https://cdn.discordapp.com/avatars/228736069091196928/cd771f5f824f380a4f82ce8f8e90be58.webp?size=512"
+          src={`https://hashvatar.vercel.app/${user.data?.id}/stagger`}
           objectFit="cover"
           css={{ borderRadius: "50%", aspectRatio: "1 / 1", maxW: 125 }}
         />
-        <Text h1 css={{ textAlign: "center" }}>
+        <Text h1 css={{ textAlign: "center" }} size="2.25rem">
           Welcome Back, {user.data?.name}
+        </Text>
+        <Text
+          h2
+          color="primary"
+          css={{ mt: 0, display: "flex", alignItems: "center", gap: 5 }}
+          size="0.875rem"
+        >
+          {updateMessage} <Loading type="points-opacity" />
         </Text>
       </Header>
       {/* <Text size={30} weight="bold">
