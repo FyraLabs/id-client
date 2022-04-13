@@ -44,6 +44,7 @@ const schema = z.object({
 });
 
 const Login = () => {
+  const router = useRouter();
   const { isLoading, mutateAsync } = useMutation(
     async (data: { email: string; password: string }) =>
       (await api.post<{ token: string }>("/user/login", data)).data
@@ -52,7 +53,6 @@ const Login = () => {
     resolver: zodResolver(schema),
     mode: "onTouched",
   });
-  const router = useRouter();
   const { token, setToken } = Auth.useContainer();
 
   useEffect(() => {
