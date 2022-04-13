@@ -32,14 +32,15 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/router";
-import { Auth } from "../../util/auth";
+import { Auth } from "../util/auth";
 import { FC, Suspense, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
-import { api } from "../../util/api";
+import { api } from "../util/api";
 import dynamic from "next/dynamic";
 import dayjs, { Dayjs } from "dayjs";
 import calendarPlugin from "dayjs/plugin/calendar";
 import axios from "axios";
+import { useIsClient } from "usehooks-ts";
 
 dayjs.extend(calendarPlugin);
 
@@ -177,7 +178,7 @@ const UpdateName: FC<{ name: string }> = ({ name }) => {
 
   useEffect(() => {
     setValue("name", name);
-  }, [name]);
+  }, [name, setValue]);
 
   return (
     <form
@@ -263,7 +264,7 @@ const UpdateEmail: FC<{ email: string }> = ({ email }) => {
 
   useEffect(() => {
     setValue("email", email);
-  }, [email]);
+  }, [email, setValue]);
 
   return (
     <form
@@ -384,6 +385,8 @@ const BasicInfo = () => {
         <Text>Failed to load basic user data, check console for more info</Text>
       </Error>
     );
+
+  if (!user.data) return <></>;
 
   return (
     <>
@@ -775,9 +778,7 @@ const Main = () => {
     ];
 
     setUpdateMessage(items[Math.floor(Math.random() * items.length)]);
-  }, []);
-
-  if (!token) return <></>;
+  }, [router, token]);
 
   if (user.isLoading)
     return (
@@ -837,6 +838,7 @@ const Main = () => {
           src={`https://hashvatar.vercel.app/${user.data?.id}/stagger`}
           objectFit="cover"
           css={{ borderRadius: "50%", aspectRatio: "1 / 1", maxW: 125 }}
+          alt={user.data?.name + "'s avatar"}
         />
         <Text h1 css={{ textAlign: "center" }} size="2.25rem">
           Welcome Back, {user.data?.name}
@@ -880,7 +882,7 @@ const Main = () => {
             contentLeft={
               <FontAwesomeIcon icon={faKey} fixedWidth fontSize={20} />
             }
-            title={<Text weight="bold">Lea's Security Key</Text>}
+            title={<Text weight="bold">Lea&apos;s Security Key</Text>}
             subtitle="Yesterday, at 7:08am"
           >
             <Button color="error" css={{ w: "100%" }} auto>
@@ -891,7 +893,7 @@ const Main = () => {
             contentLeft={
               <FontAwesomeIcon icon={faFingerprint} fixedWidth fontSize={20} />
             }
-            title={<Text weight="bold">Jade's Fingerprint Scanner</Text>}
+            title={<Text weight="bold">Jade&apos;s Fingerprint Scanner</Text>}
             subtitle="Today, at 12:21pm"
           >
             <Button color="error" css={{ w: "100%" }} auto>
@@ -907,5 +909,10 @@ const Main = () => {
   );
 };
 
-//TODO: Find a better way of preventing SSR and client mismatch
-export default dynamic(async () => Main);
+const Wrapper = () => {
+  const isClient = useIsClient();
+
+  return isClient ? <Main /> : <></>;
+};
+
+export default Wrapper;

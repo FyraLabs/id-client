@@ -8,13 +8,14 @@ import { api } from "../util/api";
 const Icon = styled(FontAwesomeIcon);
 const Error = styled("div");
 
-const verifyEmail = () => {
+const VerifyEmail = () => {
   const [showError, setShowError] = useState(false);
   const verifyEmail = useMutation(async (token: string) => {
     (await api.post("/user/verifyEmail", { token })).data;
   });
 
   useEffect(() => {
+    // TODO: Use Router?
     const token = new URLSearchParams(window.location.search).get("token");
     if (!token) {
       setShowError(true);
@@ -22,7 +23,7 @@ const verifyEmail = () => {
     }
 
     verifyEmail.mutate(token);
-  }, []);
+  }, [verifyEmail]);
 
   if (verifyEmail.isLoading)
     return (
@@ -131,4 +132,4 @@ const verifyEmail = () => {
   );
 };
 
-export default verifyEmail;
+export default VerifyEmail;

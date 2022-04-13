@@ -66,8 +66,7 @@ const Register = () => {
 
   useEffect(() => {
     if (token) router.push("/dashboard");
-  }, []);
-  if (token) return <></>;
+  }, [router, token]);
 
   return (
     <Container>
@@ -77,6 +76,7 @@ const Register = () => {
             style={{ maxWidth: 500, margin: "auto" }}
             src="/dawn.svg"
             showSkeleton={false}
+            alt="Dawn Graphic"
           />
         </Col>
         <Col
@@ -182,7 +182,7 @@ const Register = () => {
               {isLoading ? <Loading color="white" size="sm" /> : "Register"}
             </Button>
             <Spacer y={0.5} />
-            <NextLink href="/login">
+            <NextLink href="/login" passHref>
               <Link css={{ fontSize: 15 }}>Have an account?</Link>
             </NextLink>
           </Form>

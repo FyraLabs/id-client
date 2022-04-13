@@ -57,8 +57,7 @@ const Login = () => {
 
   useEffect(() => {
     if (token) router.push("/dashboard");
-  }, []);
-  if (token) return <></>;
+  }, [router, token]);
 
   return (
     <Container>
@@ -69,6 +68,7 @@ const Login = () => {
             style={{ maxWidth: 500, margin: "auto" }}
             src="/space.svg"
             showSkeleton={false}
+            alt="Space Graphic"
           />
         </Col>
         <Col
@@ -150,7 +150,7 @@ const Login = () => {
               {isLoading ? <Loading color="white" size="sm" /> : "Login"}
             </Button>
             <Spacer y={0.5} />
-            <NextLink href="/register">
+            <NextLink href="/register" passHref>
               <Link css={{ fontSize: 15 }}>Dont have an account?</Link>
             </NextLink>
           </Form>
