@@ -22,6 +22,7 @@ import axios from "axios";
 import { useRouter } from "next/router";
 import { Auth } from "../util/auth";
 import { useEffect } from "react";
+import Head from "next/head";
 
 const Form = styled("form");
 
@@ -70,6 +71,9 @@ const Register = () => {
 
   return (
     <Container>
+      <Head>
+        <title>Register</title>
+      </Head>
       <Row css={{ minHeight: "100vh" }} align="center">
         <Col>
           <Image

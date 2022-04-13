@@ -41,6 +41,7 @@ import dayjs, { Dayjs } from "dayjs";
 import calendarPlugin from "dayjs/plugin/calendar";
 import axios from "axios";
 import { useIsClient } from "usehooks-ts";
+import Head from "next/head";
 
 dayjs.extend(calendarPlugin);
 
@@ -826,6 +827,9 @@ const Main = () => {
     <Container
       css={{ mw: 600, display: "flex", flexDirection: "column", gap: 25 }}
     >
+      <Head>
+        <title>Dashboard</title>
+      </Head>
       <Header
         css={{
           display: "flex",

@@ -21,6 +21,7 @@ import axios from "axios";
 import { Auth } from "../util/auth";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 
 const Form = styled("form");
 
@@ -61,6 +62,9 @@ const Login = () => {
 
   return (
     <Container>
+      <Head>
+        <title>Login</title>
+      </Head>
       <Row css={{ minHeight: "100vh" }} align="center">
         <Col>
           {/* NOTE: Accent #0070f3 */}
