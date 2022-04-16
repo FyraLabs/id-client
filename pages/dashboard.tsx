@@ -4,9 +4,14 @@ import {
   faFingerprint,
   faKey,
   faMobileAlt,
+  faQuestionCircle,
   faSave,
   faTabletAlt,
   faWarning,
+  faCommentDots,
+  faClock,
+  faLock,
+  faCopy,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   Button,
@@ -25,13 +30,22 @@ import {
   Image,
   Loading,
   Link,
+  Radio,
 } from "@nextui-org/react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/router";
 import { Auth } from "../util/auth";
-import { FC, Suspense, useEffect, useMemo, useState } from "react";
+import {
+  Dispatch,
+  FC,
+  SetStateAction,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { api } from "../util/api";
 import dynamic from "next/dynamic";
@@ -40,6 +54,9 @@ import calendarPlugin from "dayjs/plugin/calendar";
 import axios from "axios";
 import { useIsClient } from "usehooks-ts";
 import Head from "next/head";
+import { TOTP } from "otpauth";
+import qrcode from "qrcode";
+import ReactInputVerificationCode from "react-input-verification-code";
 
 dayjs.extend(calendarPlugin);
 
@@ -737,6 +754,277 @@ const LogOut = () => {
   );
 };
 
+type AddTwoFactorMethod = null | "app" | "hardware" | "signal";
+
+const SelectMethod: FC<{
+  setMethod: Dispatch<SetStateAction<AddTwoFactorMethod>>;
+}> = ({ setMethod }) => {
+  return (
+    <>
+      <Modal.Header>
+        <Text size={18} weight="bold">
+          Add 2FA Method
+        </Text>
+      </Modal.Header>
+      <Modal.Body>
+        <Button
+          icon={<FontAwesomeIcon icon={faClock} />}
+          onClick={() => setMethod("app")}
+        >
+          Authenticator App
+        </Button>
+        <Button
+          icon={<FontAwesomeIcon icon={faKey} />}
+          onClick={() => setMethod("hardware")}
+        >
+          Hardware Device
+        </Button>
+        <Button
+          icon={<FontAwesomeIcon icon={faCommentDots} />}
+          onClick={() => setMethod("signal")}
+        >
+          Signal Message
+        </Button>
+      </Modal.Body>
+
+      <Modal.Footer></Modal.Footer>
+    </>
+  );
+};
+
+// const Icon = styled(FontAwesomeIcon);
+
+const appMethodFirstStepSchema = z.object({
+  name: z
+    .string()
+    .nonempty("Device name must not be empty")
+    .max(256, "Device name must be less than 256 characters"),
+});
+
+const AppMethod = () => {
+  const totp = useMemo(
+    () =>
+      new TOTP({
+        issuer: "FyraLabs",
+      }),
+    []
+  );
+
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const { register, formState, handleSubmit } = useForm<{ name: string }>({
+    resolver: zodResolver(appMethodFirstStepSchema),
+    mode: "onTouched",
+  });
+  // const [deviceName, setDeviceName] = useState<string>("");
+  // const nameValid = useMemo(
+  //   () =>
+  //     z
+  //       .string()
+  //       .nonempty("Device name must not be empty")
+  //       .max(256, "Device name must be less than 256 characters"),
+  //   [deviceName]
+  // );
+
+  useEffect(() => {
+    qrcode.toDataURL(totp.toString()).then(setQrCode);
+  }, [totp.toString()]);
+
+  return (
+    <form onSubmit={handleSubmit(() => console.log("next step, yay!"))}>
+      <Modal.Header>
+        <Text size={18} weight="bold">
+          Add Authenticator App
+        </Text>
+      </Modal.Header>
+      <Modal.Body>
+        {qrCode ? <Image src={qrCode} /> : <Loading />}
+        <Input
+          value={totp.secret.base32}
+          readOnly
+          label="TOTP Secret"
+          bordered
+          contentRight={
+            <Icon
+              icon={faCopy}
+              color="#FFFFFF"
+              css={{ cursor: "pointer", pointerEvents: "all" }}
+              onClick={() => {
+                navigator.clipboard.writeText(totp.secret.base32);
+              }}
+            />
+          }
+        />
+
+        <Input
+          label="Device Name"
+          bordered
+          placeholder="Lea's iPhone"
+          status={formState.errors.name ? "error" : undefined}
+          helperText={formState.errors.name?.message}
+          helperColor="error"
+          {...register("name")}
+        />
+        <Spacer y={0.1} />
+        {/* <Text>Confirm TOTP Code</Text> */}
+        {/* <Row css={{ gap: 5, display: "flex", justifyContent: "space-around" }}>
+          <Input
+          bordered
+          size={"xl"}
+          css={{
+            input: {
+              textAlign: "center",
+              fontWeight: "$bold",
+              fontSize: "$md",
+              width: 25,
+              padding: 0,
+            },
+          }}
+          animated
+          />
+          <Input
+          bordered
+          size={"xl"}
+          css={{
+            input: {
+              textAlign: "center",
+              fontWeight: "$bold",
+              fontSize: "$md",
+              width: 25,
+              padding: 0,
+            },
+          }}
+          animated
+          />
+          <Input
+          bordered
+          size={"xl"}
+          css={{
+            input: {
+              textAlign: "center",
+              fontWeight: "$bold",
+              fontSize: "$md",
+              width: 25,
+              padding: 0,
+            },
+          }}
+          animated
+          />
+          <Input
+          bordered
+          size={"xl"}
+          css={{
+            input: {
+              textAlign: "center",
+              fontWeight: "$bold",
+              fontSize: "$md",
+              width: 25,
+              padding: 0,
+            },
+          }}
+          animated
+          />
+          <Input
+          bordered
+          size={"xl"}
+          css={{
+            input: {
+              textAlign: "center",
+              fontWeight: "$bold",
+              fontSize: "$md",
+              width: 25,
+              padding: 0,
+            },
+          }}
+          />
+          <Input
+          bordered
+          size={"xl"}
+          css={{
+            input: {
+              textAlign: "center",
+              fontWeight: "$bold",
+              fontSize: "$md",
+              width: 25,
+              padding: 0,
+            },
+          }}
+          />
+        </Row> */}
+      </Modal.Body>
+
+      <Modal.Footer>
+        <Button auto>Continue</Button>
+      </Modal.Footer>
+    </form>
+  );
+};
+
+const TwoFactor = () => {
+  const addMethod = useModal(false);
+  const [method, setMethod] = useState<AddTwoFactorMethod>(null);
+
+  useEffect(() => {
+    return () => {
+      setMethod(null);
+    };
+  }, [addMethod.visible]);
+
+  return (
+    <>
+      <Modal
+        aria-labelledby="Update Password"
+        aria-describedby="Update your password"
+        closeButton
+        blur
+        {...addMethod.bindings}
+      >
+        {method === null ? (
+          <SelectMethod setMethod={setMethod} />
+        ) : method === "app" ? (
+          <AppMethod />
+        ) : (
+          <Text>Not implemented</Text>
+        )}
+      </Modal>
+      <Card>
+        <Text size={20} weight="bold">
+          2FA
+        </Text>
+        <Spacer y={0.5} />
+        <Collapse.Group css={{ p: 0 }}>
+          <Collapse
+            contentLeft={
+              <FontAwesomeIcon icon={faKey} fixedWidth fontSize={20} />
+            }
+            title={<Text weight="bold">Lea&apos;s Security Key</Text>}
+            subtitle="Yesterday, at 7:08am"
+          >
+            <Button color="error" css={{ w: "100%" }} auto>
+              Remove 2FA Method
+            </Button>
+          </Collapse>
+          <Collapse
+            contentLeft={
+              <FontAwesomeIcon icon={faFingerprint} fixedWidth fontSize={20} />
+            }
+            title={<Text weight="bold">Jade&apos;s Fingerprint Scanner</Text>}
+            subtitle="Today, at 12:21pm"
+          >
+            <Button color="error" css={{ w: "100%" }} auto>
+              Remove 2FA Method
+            </Button>
+          </Collapse>
+        </Collapse.Group>
+        <Spacer y={0.5} />
+        <Button color="primary" flat onClick={() => addMethod.setVisible(true)}>
+          Add 2FA Method
+        </Button>
+        <Spacer y={0.5} />
+      </Card>
+    </>
+  );
+};
+
 const Error = styled("div");
 const Icon = styled(FontAwesomeIcon);
 
@@ -873,38 +1161,7 @@ const Main = () => {
 
       <BasicInfo />
       <SessionInfo />
-
-      <Card>
-        <Text size={20} weight="bold">
-          2FA
-        </Text>
-        <Spacer y={0.5} />
-        <Collapse.Group css={{ p: 0 }}>
-          <Collapse
-            contentLeft={
-              <FontAwesomeIcon icon={faKey} fixedWidth fontSize={20} />
-            }
-            title={<Text weight="bold">Lea&apos;s Security Key</Text>}
-            subtitle="Yesterday, at 7:08am"
-          >
-            <Button color="error" css={{ w: "100%" }} auto>
-              Remove 2FA Method
-            </Button>
-          </Collapse>
-          <Collapse
-            contentLeft={
-              <FontAwesomeIcon icon={faFingerprint} fixedWidth fontSize={20} />
-            }
-            title={<Text weight="bold">Jade&apos;s Fingerprint Scanner</Text>}
-            subtitle="Today, at 12:21pm"
-          >
-            <Button color="error" css={{ w: "100%" }} auto>
-              Remove 2FA Method
-            </Button>
-          </Collapse>
-        </Collapse.Group>
-        <Spacer y={0.5} />
-      </Card>
+      <TwoFactor />
 
       <LogOut />
     </Container>
