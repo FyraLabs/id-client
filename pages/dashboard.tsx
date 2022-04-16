@@ -56,6 +56,7 @@ import { useIsClient } from "usehooks-ts";
 import Head from "next/head";
 import { TOTP } from "otpauth";
 import qrcode from "qrcode";
+import { CodeInput } from "../components/CodeInput";
 
 dayjs.extend(calendarPlugin);
 
@@ -814,22 +815,31 @@ const AppMethod = () => {
     resolver: zodResolver(appMethodFirstStepSchema),
     mode: "onTouched",
   });
-  // const [deviceName, setDeviceName] = useState<string>("");
-  // const nameValid = useMemo(
-  //   () =>
-  //     z
-  //       .string()
-  //       .nonempty("Device name must not be empty")
-  //       .max(256, "Device name must be less than 256 characters"),
-  //   [deviceName]
-  // );
+
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     qrcode.toDataURL(totp.toString()).then(setQrCode);
   }, [totp.toString()]);
 
-  return (
-    <form onSubmit={handleSubmit(() => console.log("next step, yay!"))}>
+  return confirming ? (
+    <>
+      <Modal.Header>
+        <Text size={18} weight="bold">
+          Confirm 2FA Method
+        </Text>
+      </Modal.Header>
+      <Modal.Body>
+        <CodeInput onCodeChange={(code) => console.log(code)} />
+      </Modal.Body>
+      <Modal.Footer>
+        <Button auto onClick={() => setConfirming(false)} flat>
+          Back
+        </Button>
+      </Modal.Footer>
+    </>
+  ) : (
+    <form onSubmit={handleSubmit(() => setConfirming(true))}>
       <Modal.Header>
         <Text size={18} weight="bold">
           Add Authenticator App
@@ -864,95 +874,12 @@ const AppMethod = () => {
           {...register("name")}
         />
         <Spacer y={0.1} />
-        {/* <Text>Confirm TOTP Code</Text> */}
-        {/* <Row css={{ gap: 5, display: "flex", justifyContent: "space-around" }}>
-          <Input
-          bordered
-          size={"xl"}
-          css={{
-            input: {
-              textAlign: "center",
-              fontWeight: "$bold",
-              fontSize: "$md",
-              width: 25,
-              padding: 0,
-            },
-          }}
-          animated
-          />
-          <Input
-          bordered
-          size={"xl"}
-          css={{
-            input: {
-              textAlign: "center",
-              fontWeight: "$bold",
-              fontSize: "$md",
-              width: 25,
-              padding: 0,
-            },
-          }}
-          animated
-          />
-          <Input
-          bordered
-          size={"xl"}
-          css={{
-            input: {
-              textAlign: "center",
-              fontWeight: "$bold",
-              fontSize: "$md",
-              width: 25,
-              padding: 0,
-            },
-          }}
-          animated
-          />
-          <Input
-          bordered
-          size={"xl"}
-          css={{
-            input: {
-              textAlign: "center",
-              fontWeight: "$bold",
-              fontSize: "$md",
-              width: 25,
-              padding: 0,
-            },
-          }}
-          animated
-          />
-          <Input
-          bordered
-          size={"xl"}
-          css={{
-            input: {
-              textAlign: "center",
-              fontWeight: "$bold",
-              fontSize: "$md",
-              width: 25,
-              padding: 0,
-            },
-          }}
-          />
-          <Input
-          bordered
-          size={"xl"}
-          css={{
-            input: {
-              textAlign: "center",
-              fontWeight: "$bold",
-              fontSize: "$md",
-              width: 25,
-              padding: 0,
-            },
-          }}
-          />
-        </Row> */}
       </Modal.Body>
 
       <Modal.Footer>
-        <Button auto>Continue</Button>
+        <Button auto type="submit">
+          Continue
+        </Button>
       </Modal.Footer>
     </form>
   );
