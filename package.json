@@ -24,13 +24,9 @@
     "otpauth": "^7.1.1",
     "qrcode": "^1.5.0",
     "react": "18.0.0",
-    "react-auth-code-input": "^3.1.1",
-    "react-code-input": "^3.10.1",
     "react-dom": "18.0.0",
     "react-hook-form": "^7.29.0",
-    "react-input-verification-code": "^1.0.0",
     "react-query": "^3.34.19",
-    "styled-components": "^5.3.5",
     "usehooks-ts": "^2.5.1",
     "zod": "^3.14.4"
   },
