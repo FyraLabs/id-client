@@ -56,7 +56,6 @@ import { useIsClient } from "usehooks-ts";
 import Head from "next/head";
 import { TOTP } from "otpauth";
 import qrcode from "qrcode";
-import ReactInputVerificationCode from "react-input-verification-code";
 
 dayjs.extend(calendarPlugin);
 
