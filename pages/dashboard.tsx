@@ -801,17 +801,104 @@ const appMethodFirstStepSchema = z.object({
     .max(256, "Device name must be less than 256 characters"),
 });
 
-const AppMethod = () => {
+const ConfirmAppMethod: FC<{
+  name: string;
+  secret: string;
+  closeModal: () => void;
+}> = ({ name, secret, closeModal }) => {
+  const { token } = Auth.useContainer();
+  const queryClient = useQueryClient();
+  const confirmMethod = useMutation(
+    async ({ secret, code }: { secret: string; code: string }) =>
+      (
+        await api.post(
+          "/user/me/2fa",
+          {
+            method: "totp",
+            name,
+            data: {
+              code,
+              secret,
+            },
+          },
+          {
+            headers: {
+              Authorization: token!,
+            },
+          }
+        )
+      ).data,
+    {
+      onSuccess: () => {
+        queryClient.refetchQueries(["me", "2fa"]);
+      },
+    }
+  );
+
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <CodeInput
+      error={error ? "Invalid code" : undefined}
+      onChange={() => {
+        setError(null);
+      }}
+      onCode={async (code) => {
+        try {
+          await confirmMethod.mutateAsync({
+            code,
+            secret,
+          });
+          closeModal();
+        } catch (e) {
+          if (axios.isAxiosError(e)) {
+            if (e.response?.status === 401) {
+              setError("Invalid Code");
+            }
+
+            setError("Unknown Error");
+          }
+        }
+      }}
+    />
+  );
+};
+
+const AppMethod: FC<{ closeModal: () => void }> = ({ closeModal }) => {
+  const { token } = Auth.useContainer();
+  const user = useQuery(
+    ["me"],
+    async () =>
+      (
+        await api.get<{
+          id: string;
+          email: string;
+          name: string;
+          emailVerified: boolean;
+        }>("/user/me", {
+          headers: {
+            Authorization: token!,
+          },
+        })
+      ).data,
+    {
+      enabled: !!token,
+    }
+  );
+
   const totp = useMemo(
     () =>
       new TOTP({
         issuer: "FyraLabs",
+        label: user.data?.email,
       }),
-    []
+    [user.data?.name]
   );
 
   const [qrCode, setQrCode] = useState<string | null>(null);
-  const { register, formState, handleSubmit } = useForm<{ name: string }>({
+  const { register, formState, handleSubmit, getValues } = useForm<{
+    name: string;
+  }>({
     resolver: zodResolver(appMethodFirstStepSchema),
     mode: "onTouched",
   });
@@ -830,7 +917,11 @@ const AppMethod = () => {
         </Text>
       </Modal.Header>
       <Modal.Body>
-        <CodeInput onCodeChange={(code) => console.log(code)} />
+        <ConfirmAppMethod
+          name={getValues("name")}
+          secret={totp.secret.base32}
+          closeModal={closeModal}
+        />
       </Modal.Body>
       <Modal.Footer>
         <Button auto onClick={() => setConfirming(false)} flat>
@@ -888,12 +979,52 @@ const AppMethod = () => {
 const TwoFactor = () => {
   const addMethod = useModal(false);
   const [method, setMethod] = useState<AddTwoFactorMethod>(null);
+  const { token } = Auth.useContainer();
+  const methods = useQuery(
+    ["me", "2fa"],
+    async () =>
+      (
+        await api.get<
+          {
+            id: string;
+            name: string;
+            type: "totp";
+            createdAt: string;
+            lastUsedAt?: string;
+          }[]
+        >("/user/me/2fa", {
+          headers: {
+            Authorization: token!,
+          },
+        })
+      ).data,
+    { enabled: !!token }
+  );
 
   useEffect(() => {
     return () => {
       setMethod(null);
     };
   }, [addMethod.visible]);
+
+  if (methods.isLoading) return <Loading>Loading 2FA Methods...</Loading>;
+  if (methods.isError)
+    return (
+      <Error
+        css={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          mw: 200,
+          gap: 5,
+          mx: "auto",
+        }}
+      >
+        <Icon icon={faWarning} fontSize={30} css={{ color: "$error" }} />
+        <Text>Failed to load 2fa methods, check console for more info</Text>
+      </Error>
+    );
 
   return (
     <>
@@ -907,7 +1038,7 @@ const TwoFactor = () => {
         {method === null ? (
           <SelectMethod setMethod={setMethod} />
         ) : method === "app" ? (
-          <AppMethod />
+          <AppMethod closeModal={() => addMethod.setVisible(false)} />
         ) : (
           <Text>Not implemented</Text>
         )}
@@ -918,7 +1049,27 @@ const TwoFactor = () => {
         </Text>
         <Spacer y={0.5} />
         <Collapse.Group css={{ p: 0 }}>
-          <Collapse
+          {methods.data?.map((method) => (
+            <Collapse
+              contentLeft={
+                <FontAwesomeIcon icon={faClock} fixedWidth fontSize={20} />
+              }
+              title={<Text weight="bold">{method.name}</Text>}
+              subtitle={
+                method.lastUsedAt
+                  ? dayjs(method.lastUsedAt).calendar()
+                  : "Never Used"
+              }
+            >
+              <Row>
+                <Col>
+                  <Text weight="bold">Created At</Text>
+                  <Text>{dayjs(method.createdAt).calendar()}</Text>
+                </Col>
+              </Row>
+            </Collapse>
+          ))}
+          {/* <Collapse
             contentLeft={
               <FontAwesomeIcon icon={faKey} fixedWidth fontSize={20} />
             }
@@ -939,7 +1090,7 @@ const TwoFactor = () => {
             <Button color="error" css={{ w: "100%" }} auto>
               Remove 2FA Method
             </Button>
-          </Collapse>
+          </Collapse> */}
         </Collapse.Group>
         <Spacer y={0.5} />
         <Button color="primary" flat onClick={() => addMethod.setVisible(true)}>
