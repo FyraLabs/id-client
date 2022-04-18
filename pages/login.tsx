@@ -48,7 +48,22 @@ const Login = () => {
   const router = useRouter();
   const { isLoading, mutateAsync } = useMutation(
     async (data: { email: string; password: string }) =>
-      (await api.post<{ token: string }>("/user/login", data)).data
+      (
+        await api.post<
+          | { type: "session"; data: { token: string } }
+          | {
+              type: "2fa";
+              data: {
+                methods: {
+                  id: string;
+                  type: "totp";
+                  name: string;
+                }[];
+                token: string;
+              };
+            }
+        >("/user/login", data)
+      ).data
   );
   const { register, handleSubmit, formState, setError } = useForm<LoginForm>({
     resolver: zodResolver(schema),
@@ -86,7 +101,11 @@ const Login = () => {
             onSubmit={handleSubmit(async (data) => {
               try {
                 const res = await mutateAsync(data);
-                setToken(res.token);
+                if (res.type === "session") {
+                  setToken(res.data.token);
+                } else if (res.type === "2fa") {
+                  // TODO: Preform 2FA Flow
+                }
                 router.push("/dashboard");
               } catch (e) {
                 if (axios.isAxiosError(e)) {
