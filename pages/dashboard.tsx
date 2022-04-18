@@ -773,7 +773,7 @@ const SelectMethod: FC<{
         >
           Authenticator App
         </Button>
-        <Button
+        {/* <Button
           icon={<FontAwesomeIcon icon={faKey} />}
           onClick={() => setMethod("hardware")}
         >
@@ -784,7 +784,7 @@ const SelectMethod: FC<{
           onClick={() => setMethod("signal")}
         >
           Signal Message
-        </Button>
+        </Button> */}
       </Modal.Body>
 
       <Modal.Footer></Modal.Footer>
@@ -976,6 +976,72 @@ const AppMethod: FC<{ closeModal: () => void }> = ({ closeModal }) => {
   );
 };
 
+interface TwoFactorMethod {
+  id: string;
+  name: string;
+  type: "totp";
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+const TwoFactorItem: FC<{ method: TwoFactorMethod }> = ({ method }) => {
+  const { token } = Auth.useContainer();
+  const queryClient = useQueryClient();
+  const deleteMethod = useMutation(
+    async () =>
+      (
+        await api.delete("/user/me/2fa/" + method.id, {
+          headers: {
+            Authorization: token!,
+          },
+        })
+      ).data,
+    {
+      onSuccess: () => {
+        // TODO: Make this cleaner than a refresh
+        queryClient.refetchQueries(["me", "2fa"]);
+      },
+    }
+  );
+
+  return (
+    <Collapse
+      contentLeft={<FontAwesomeIcon icon={faClock} fixedWidth fontSize={20} />}
+      title={<Text weight="bold">{method.name}</Text>}
+      subtitle={
+        method.lastUsedAt ? dayjs(method.lastUsedAt).calendar() : "Never Used"
+      }
+    >
+      <Row>
+        <Col>
+          <Text weight="bold">Created At</Text>
+          <Text>{dayjs(method.createdAt).calendar()}</Text>
+        </Col>
+        <Col>
+          <Text weight="bold">Type</Text>
+          <Text>{method.type === "totp" ? "Authenticator App" : ""}</Text>
+        </Col>
+      </Row>
+
+      <Spacer y={1} />
+
+      <Button
+        color="error"
+        css={{ w: "100%" }}
+        auto
+        disabled={deleteMethod.isLoading}
+        onClick={() => deleteMethod.mutate()}
+      >
+        {deleteMethod.isLoading ? (
+          <Loading color="white" size="sm" />
+        ) : (
+          "Remove 2FA Method"
+        )}
+      </Button>
+    </Collapse>
+  );
+};
+
 const TwoFactor = () => {
   const addMethod = useModal(false);
   const [method, setMethod] = useState<AddTwoFactorMethod>(null);
@@ -984,15 +1050,7 @@ const TwoFactor = () => {
     ["me", "2fa"],
     async () =>
       (
-        await api.get<
-          {
-            id: string;
-            name: string;
-            type: "totp";
-            createdAt: string;
-            lastUsedAt?: string;
-          }[]
-        >("/user/me/2fa", {
+        await api.get<TwoFactorMethod[]>("/user/me/2fa", {
           headers: {
             Authorization: token!,
           },
@@ -1000,12 +1058,6 @@ const TwoFactor = () => {
       ).data,
     { enabled: !!token }
   );
-
-  useEffect(() => {
-    return () => {
-      setMethod(null);
-    };
-  }, [addMethod.visible]);
 
   if (methods.isLoading) return <Loading>Loading 2FA Methods...</Loading>;
   if (methods.isError)
@@ -1050,50 +1102,18 @@ const TwoFactor = () => {
         <Spacer y={0.5} />
         <Collapse.Group css={{ p: 0 }}>
           {methods.data?.map((method) => (
-            <Collapse
-              contentLeft={
-                <FontAwesomeIcon icon={faClock} fixedWidth fontSize={20} />
-              }
-              title={<Text weight="bold">{method.name}</Text>}
-              subtitle={
-                method.lastUsedAt
-                  ? dayjs(method.lastUsedAt).calendar()
-                  : "Never Used"
-              }
-            >
-              <Row>
-                <Col>
-                  <Text weight="bold">Created At</Text>
-                  <Text>{dayjs(method.createdAt).calendar()}</Text>
-                </Col>
-              </Row>
-            </Collapse>
+            <TwoFactorItem key={method.id} method={method} />
           ))}
-          {/* <Collapse
-            contentLeft={
-              <FontAwesomeIcon icon={faKey} fixedWidth fontSize={20} />
-            }
-            title={<Text weight="bold">Lea&apos;s Security Key</Text>}
-            subtitle="Yesterday, at 7:08am"
-          >
-            <Button color="error" css={{ w: "100%" }} auto>
-              Remove 2FA Method
-            </Button>
-          </Collapse>
-          <Collapse
-            contentLeft={
-              <FontAwesomeIcon icon={faFingerprint} fixedWidth fontSize={20} />
-            }
-            title={<Text weight="bold">Jade&apos;s Fingerprint Scanner</Text>}
-            subtitle="Today, at 12:21pm"
-          >
-            <Button color="error" css={{ w: "100%" }} auto>
-              Remove 2FA Method
-            </Button>
-          </Collapse> */}
         </Collapse.Group>
         <Spacer y={0.5} />
-        <Button color="primary" flat onClick={() => addMethod.setVisible(true)}>
+        <Button
+          color="primary"
+          flat
+          onClick={() => {
+            setMethod(null);
+            addMethod.setVisible(true);
+          }}
+        >
           Add 2FA Method
         </Button>
         <Spacer y={0.5} />
