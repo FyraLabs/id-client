@@ -10,18 +10,22 @@ import {
   styled,
   Link,
   Loading,
+  Card,
 } from "@nextui-org/react";
 import NextLink from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "react-query";
+import { useMutation, useQueryClient } from "react-query";
 import { api } from "../util/api";
 import axios from "axios";
 import { Auth } from "../util/auth";
-import { useEffect } from "react";
+import { FC, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faClock } from "@fortawesome/free-solid-svg-icons";
+import { CodeInput } from "../components/CodeInput";
 
 const Form = styled("form");
 
@@ -43,6 +47,80 @@ const schema = z.object({
     .min(8, "Password must be at least 8 characters")
     .max(256, "Password must be at most 256 characters"),
 });
+
+const SecondFactorCard: FC<{
+  name: string;
+  type: "totp";
+  onClick: () => void;
+}> = ({ name, onClick }) => {
+  return (
+    <Card clickable onClick={onClick}>
+      <Row css={{ alignItems: "center", gap: 10 }}>
+        <FontAwesomeIcon icon={faClock} fixedWidth fontSize={20} />
+        <Text weight="bold">{name}</Text>
+      </Row>
+    </Card>
+  );
+};
+
+const TOTPVerify: FC<{
+  totpToken: string;
+  methodID: string;
+}> = ({ totpToken, methodID }) => {
+  const router = useRouter();
+  const { token, setToken } = Auth.useContainer();
+  const confirmMethod = useMutation(
+    async ({ code }: { code: string }) =>
+      (
+        await api.post<{
+          token: string;
+        }>(
+          "/user/login/2fa",
+          {
+            method: "totp",
+            token: totpToken,
+            methodID,
+            data: {
+              code,
+            },
+          },
+          {
+            headers: {
+              Authorization: token!,
+            },
+          }
+        )
+      ).data
+  );
+
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <CodeInput
+      error={error ? "Invalid code" : undefined}
+      onChange={() => {
+        setError(null);
+      }}
+      onCode={async (code) => {
+        try {
+          const { token } = await confirmMethod.mutateAsync({
+            code,
+          });
+          setToken(token);
+          router.push("/dashboard");
+        } catch (e) {
+          if (axios.isAxiosError(e)) {
+            if (e.response?.status === 401) {
+              setError("Invalid Code");
+            }
+
+            setError("Unknown Error");
+          }
+        }
+      }}
+    />
+  );
+};
 
 const Login = () => {
   const router = useRouter();
@@ -70,6 +148,20 @@ const Login = () => {
     mode: "onTouched",
   });
   const { token, setToken } = Auth.useContainer();
+  const [twoFactorState, setTwoFactorState] = useState<{
+    methods: {
+      id: string;
+      type: "totp";
+      name: string;
+    }[];
+    token: string;
+  } | null>(null);
+  const [selectedTwoFactorID, setSelectedTwoFactorID] = useState<string | null>(
+    null
+  );
+  const method = twoFactorState?.methods?.find(
+    (method) => method.id === selectedTwoFactorID
+  );
 
   useEffect(() => {
     if (token) router.push("/dashboard");
@@ -94,42 +186,11 @@ const Login = () => {
           css={{
             display: "flex",
             flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          <Form
-            css={{ margin: "auto", display: "flex", flexDirection: "column" }}
-            onSubmit={handleSubmit(async (data) => {
-              try {
-                const res = await mutateAsync(data);
-                if (res.type === "session") {
-                  setToken(res.data.token);
-                } else if (res.type === "2fa") {
-                  // TODO: Preform 2FA Flow
-                }
-                router.push("/dashboard");
-              } catch (e) {
-                if (axios.isAxiosError(e)) {
-                  switch (e.response?.status) {
-                    case 404: {
-                      setError("email", {
-                        message: "A user with that email doesn't exist",
-                      });
-                      return;
-                    }
-
-                    case 401: {
-                      setError("password", {
-                        message: "Incorrect password",
-                      });
-                      return;
-                    }
-                  }
-                }
-
-                throw e;
-              }
-            })}
-          >
+          <div>
             <div>
               <Text h1 size={35}>
                 Welcome back to{" "}
@@ -146,37 +207,126 @@ const Login = () => {
               <Text>One account. For all of FyraLabs and beyond.</Text>
             </div>
             <Spacer y={1.5} />
-            <Input
-              labelPlaceholder={
-                formState.errors.email
-                  ? "Email - " + formState.errors.email?.message
-                  : "Email"
-              }
-              css={{ maxW: 500 }}
-              type="email"
-              status={formState.errors.email ? "error" : undefined}
-              {...register("email")}
-            />
-            <Spacer y={1.5} />
-            <Input.Password
-              labelPlaceholder={
-                formState.errors.password
-                  ? "Password - " + formState.errors.password?.message
-                  : "Password"
-              }
-              css={{ maxW: 500 }}
-              status={formState.errors.password ? "error" : undefined}
-              {...register("password")}
-            />
-            <Spacer y={1.5} />
-            <Button type="submit" disabled={!formState.isValid || isLoading}>
-              {isLoading ? <Loading color="white" size="sm" /> : "Login"}
-            </Button>
-            <Spacer y={0.5} />
-            <NextLink href="/register" passHref>
-              <Link css={{ fontSize: 15 }}>Dont have an account?</Link>
-            </NextLink>
-          </Form>
+            {selectedTwoFactorID ? (
+              method!.type === "totp" ? (
+                <Col
+                  css={{
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <TOTPVerify
+                    totpToken={twoFactorState!.token}
+                    methodID={selectedTwoFactorID}
+                  />
+                  <Spacer y={1.5} />
+                  <Button onClick={() => setSelectedTwoFactorID(null)} flat>
+                    Back
+                  </Button>
+                </Col>
+              ) : (
+                <></>
+              )
+            ) : twoFactorState ? (
+              <Col
+                css={{
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <Col
+                  css={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                  }}
+                >
+                  {twoFactorState.methods.map((method) => (
+                    <SecondFactorCard
+                      key={method.id}
+                      name={method.name}
+                      type={method.type}
+                      onClick={() => setSelectedTwoFactorID(method.id)}
+                    />
+                  ))}
+                </Col>
+                <Spacer y={1.5} />
+                <Text>
+                  No access to any of your 2FA methods?{" "}
+                  <Link href="mailto:support@fyralabs.com">
+                    Contact support.
+                  </Link>
+                </Text>
+              </Col>
+            ) : (
+              <Form
+                css={{ display: "flex", flexDirection: "column" }}
+                onSubmit={handleSubmit(async (data) => {
+                  try {
+                    const res = await mutateAsync(data);
+                    if (res.type === "session") {
+                      setToken(res.data.token);
+                      router.push("/dashboard");
+                    } else if (res.type === "2fa") {
+                      setTwoFactorState(res.data);
+                    }
+                  } catch (e) {
+                    if (axios.isAxiosError(e)) {
+                      switch (e.response?.status) {
+                        case 404: {
+                          setError("email", {
+                            message: "A user with that email doesn't exist",
+                          });
+                          return;
+                        }
+
+                        case 401: {
+                          setError("password", {
+                            message: "Incorrect password",
+                          });
+                          return;
+                        }
+                      }
+                    }
+
+                    throw e;
+                  }
+                })}
+              >
+                <Input
+                  labelPlaceholder={
+                    formState.errors.email
+                      ? "Email - " + formState.errors.email?.message
+                      : "Email"
+                  }
+                  type="email"
+                  status={formState.errors.email ? "error" : undefined}
+                  {...register("email")}
+                />
+                <Spacer y={1.5} />
+                <Input.Password
+                  labelPlaceholder={
+                    formState.errors.password
+                      ? "Password - " + formState.errors.password?.message
+                      : "Password"
+                  }
+                  status={formState.errors.password ? "error" : undefined}
+                  {...register("password")}
+                />
+                <Spacer y={1.5} />
+                <Button
+                  type="submit"
+                  disabled={!formState.isValid || isLoading}
+                >
+                  {isLoading ? <Loading color="white" size="sm" /> : "Login"}
+                </Button>
+                <Spacer y={0.5} />
+                <NextLink href="/register" passHref>
+                  <Link css={{ fontSize: 15 }}>Dont have an account?</Link>
+                </NextLink>
+              </Form>
+            )}
+          </div>
         </Col>
       </Row>
     </Container>

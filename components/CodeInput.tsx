@@ -1,4 +1,4 @@
-import { FormElement, Input, Row, styled, Text } from "@nextui-org/react";
+import { Col, FormElement, Input, Row, styled, Text } from "@nextui-org/react";
 import { FC, useEffect, useRef, useState } from "react";
 
 const BaseCodeInput: FC<{
@@ -27,8 +27,14 @@ const BaseCodeInput: FC<{
   ];
 
   return (
-    <>
-      <Row css={{ display: "flex", gap: 15, justifyContent: "center" }} fluid>
+    <Col
+      css={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 5,
+      }}
+    >
+      <Row css={{ display: "flex", justifyContent: "space-between" }} fluid>
         {code.map((val, i) => (
           <Input
             aria-label={"Code Digit Input " + (i + 1)}
@@ -143,7 +149,7 @@ const BaseCodeInput: FC<{
       ) : (
         <></>
       )}
-    </>
+    </Col>
   );
 };
 
