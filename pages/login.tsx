@@ -107,7 +107,6 @@ const TOTPVerify: FC<{
             code,
           });
           setToken(token);
-          router.push("/dashboard");
         } catch (e) {
           if (axios.isAxiosError(e)) {
             if (e.response?.status === 401) {
@@ -164,7 +163,12 @@ const Login = () => {
   );
 
   useEffect(() => {
-    if (token) router.push("/dashboard");
+    if (!router.isReady) return;
+    if (token) {
+      const next = router.query["next"];
+      if (typeof next === "string" && next.startsWith("/")) router.push(next);
+      else router.push("/dashboard");
+    }
   }, [router, token]);
 
   return (
@@ -321,7 +325,13 @@ const Login = () => {
                   {isLoading ? <Loading color="white" size="sm" /> : "Login"}
                 </Button>
                 <Spacer y={0.5} />
-                <NextLink href="/register" passHref>
+                <NextLink
+                  href={{
+                    pathname: "/register",
+                    query: router.query,
+                  }}
+                  passHref
+                >
                   <Link css={{ fontSize: 15 }}>Dont have an account?</Link>
                 </NextLink>
               </Form>

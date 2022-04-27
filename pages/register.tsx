@@ -66,7 +66,12 @@ const Register = () => {
   const { token, setToken } = Auth.useContainer();
 
   useEffect(() => {
-    if (token) router.push("/dashboard");
+    if (!router.isReady) return;
+    if (token) {
+      const next = router.query["next"];
+      if (typeof next === "string" && next.startsWith("/")) router.push(next);
+      else router.push("/dashboard");
+    }
   }, [router, token]);
 
   return (
@@ -95,7 +100,6 @@ const Register = () => {
               try {
                 const res = await mutateAsync(data);
                 setToken(res.token);
-                router.push("/dashboard");
               } catch (e) {
                 if (axios.isAxiosError(e)) {
                   switch (e.response?.status) {
@@ -186,7 +190,13 @@ const Register = () => {
               {isLoading ? <Loading color="white" size="sm" /> : "Register"}
             </Button>
             <Spacer y={0.5} />
-            <NextLink href="/login" passHref>
+            <NextLink
+              href={{
+                pathname: "/login",
+                query: router.query,
+              }}
+              passHref
+            >
               <Link css={{ fontSize: 15 }}>Have an account?</Link>
             </NextLink>
           </Form>
