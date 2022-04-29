@@ -12,6 +12,7 @@ import {
   faClock,
   faLock,
   faCopy,
+  faCamera,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   Button,
@@ -31,6 +32,7 @@ import {
   Loading,
   Link,
   Radio,
+  Popover,
 } from "@nextui-org/react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -1124,6 +1126,7 @@ const TwoFactor = () => {
 
 const Error = styled("div");
 const Icon = styled(FontAwesomeIcon);
+const Avatar = styled("div");
 
 const Main = () => {
   const router = useRouter();
@@ -1138,6 +1141,7 @@ const Main = () => {
           email: string;
           name: string;
           emailVerified: boolean;
+          avatarUrl: string;
         }>("/user/me", {
           headers: {
             Authorization: token!,
@@ -1221,12 +1225,49 @@ const Main = () => {
           mt: 25,
         }}
       >
-        <Image
-          src={`https://hashvatar.vercel.app/${user.data?.id}/stagger`}
-          objectFit="cover"
-          css={{ borderRadius: "50%", aspectRatio: "1 / 1", maxW: 125 }}
-          alt={user.data?.name + "'s avatar"}
-        />
+        <Avatar
+          css={{
+            position: "relative",
+          }}
+        >
+          <Image
+            src={
+              user.data!.avatarUrl ??
+              `https://hashvatar.vercel.app/${user.data!.id}/stagger`
+            }
+            objectFit="cover"
+            css={{ borderRadius: "50%", aspectRatio: "1 / 1", maxW: 125 }}
+            alt={user.data?.name + "'s avatar"}
+          />
+          <Popover placement="right">
+            <Popover.Trigger>
+              <Button
+                color="primary"
+                css={{
+                  position: "absolute",
+                  right: 5,
+                  bottom: 5,
+                  width: 25,
+                  height: 25,
+                  p: 7,
+                  borderRadius: "50%",
+                }}
+                auto
+              >
+                <Icon
+                  icon={faCamera}
+                  css={{ position: "absolute", color: "$white" }}
+                />
+              </Button>
+            </Popover.Trigger>
+            <Popover.Content>
+              <Button.Group vertical>
+                <Button>Upload Avatar</Button>
+                <Button>Remove Avatar</Button>
+              </Button.Group>
+            </Popover.Content>
+          </Popover>
+        </Avatar>
         <Text h1 css={{ textAlign: "center" }} size="2.25rem">
           Welcome Back, {user.data?.name}
         </Text>
