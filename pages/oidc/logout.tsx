@@ -5,10 +5,8 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { useMutation } from "react-query";
 import { api } from "../../util/api";
-import { Auth } from "../../util/auth";
-
-const Icon = styled(FontAwesomeIcon);
-const Error = styled("div");
+import { Error } from "../../components/Error";
+import { Icon } from "../../components/Icon";
 
 const Logout = () => {
   const router = useRouter();
@@ -59,16 +57,7 @@ const Logout = () => {
         }}
         fluid
       >
-        <Error
-          css={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            textAlign: "center",
-            mw: 200,
-            gap: 5,
-          }}
-        >
+        <Error>
           <Icon icon={faWarning} fontSize={30} css={{ color: "$error" }} />
           <Text>
             Failed to logout with with OIDC provider. Check console for more
@@ -88,16 +77,7 @@ const Logout = () => {
       }}
       fluid
     >
-      <Error
-        css={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-          mw: 200,
-          gap: 5,
-        }}
-      >
+      <Error>
         <Icon icon={faWarning} fontSize={30} css={{ color: "$error" }} />
         <Text>
           Failed to logout with with OIDC provider, no token was provided.

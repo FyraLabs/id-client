@@ -8,7 +8,6 @@ import {
   Spacer,
   Text,
   Image,
-  styled,
   Link,
   Loading,
 } from "@nextui-org/react";
@@ -23,8 +22,7 @@ import { useRouter } from "next/router";
 import { Auth } from "../util/auth";
 import { useEffect } from "react";
 import Head from "next/head";
-
-const Form = styled("form");
+import { AuthForm } from "../components/AuthForm";
 
 interface RegisterForm {
   name: string;
@@ -94,7 +92,7 @@ const Register = () => {
             flexDirection: "column",
           }}
         >
-          <Form
+          <AuthForm
             css={{ margin: "auto", display: "flex", flexDirection: "column" }}
             onSubmit={handleSubmit(async (data) => {
               try {
@@ -173,7 +171,7 @@ const Register = () => {
               render={({ field }) => {
                 return (
                   <Checkbox
-                    checked={field.value}
+                    isSelected={field.value}
                     name={field.name}
                     onClick={() => field.onBlur()}
                     onChange={(e) => field.onChange(e.valueOf())}
@@ -199,7 +197,7 @@ const Register = () => {
             >
               <Link css={{ fontSize: 15 }}>Have an account?</Link>
             </NextLink>
-          </Form>
+          </AuthForm>
         </Col>
       </Row>
     </Container>

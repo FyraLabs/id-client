@@ -1,16 +1,11 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faDesktopAlt,
-  faFingerprint,
-  faKey,
   faMobileAlt,
-  faQuestionCircle,
   faSave,
   faTabletAlt,
   faWarning,
-  faCommentDots,
   faClock,
-  faLock,
   faCopy,
   faCamera,
 } from "@fortawesome/free-solid-svg-icons";
@@ -31,7 +26,6 @@ import {
   Image,
   Loading,
   Link,
-  Radio,
   Popover,
 } from "@nextui-org/react";
 import { useForm } from "react-hook-form";
@@ -43,14 +37,12 @@ import {
   Dispatch,
   FC,
   SetStateAction,
-  Suspense,
   useEffect,
   useMemo,
   useState,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { api } from "../util/api";
-import dynamic from "next/dynamic";
 import dayjs, { Dayjs } from "dayjs";
 import calendarPlugin from "dayjs/plugin/calendar";
 import axios from "axios";
@@ -59,6 +51,8 @@ import Head from "next/head";
 import { TOTP } from "otpauth";
 import qrcode from "qrcode";
 import { CodeInput } from "../components/CodeInput";
+import { Error } from "../components/Error";
+import { Icon } from "../components/Icon";
 
 dayjs.extend(calendarPlugin);
 
@@ -155,10 +149,24 @@ const UpdatePassword: FC<{ closeModal: () => void }> = ({ closeModal }) => {
   );
 };
 
-const Header = styled("div");
-const ClearButton = styled("button");
-
-const VerifyRow = styled("div");
+const Header = styled("div", {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  mt: 25,
+});
+const ClearButton = styled("button", {
+  background: "transparent",
+  border: "none",
+  padding: 0,
+  margin: 0,
+  cursor: "pointer",
+});
+const VerifyRow = styled("div", {
+  display: "flex",
+  alignItems: "center",
+  gap: "5px",
+});
 
 const updateNameSchema = z.object({
   name: z
@@ -218,16 +226,7 @@ const UpdateName: FC<{ name: string }> = ({ name }) => {
           ) : updateName.isLoading ? (
             <Loading size="xs" />
           ) : formState.isValid ? (
-            <ClearButton
-              type="submit"
-              css={{
-                background: "transparent",
-                border: "none",
-                padding: 0,
-                margin: 0,
-                cursor: "pointer",
-              }}
-            >
+            <ClearButton type="submit">
               <FontAwesomeIcon icon={faSave} />
             </ClearButton>
           ) : (
@@ -319,16 +318,7 @@ const UpdateEmail: FC<{ email: string }> = ({ email }) => {
           ) : updateEmail.isLoading ? (
             <Loading size="xs" />
           ) : formState.isValid ? (
-            <ClearButton
-              type="submit"
-              css={{
-                background: "transparent",
-                border: "none",
-                padding: 0,
-                margin: 0,
-                cursor: "pointer",
-              }}
-            >
+            <ClearButton type="submit">
               <FontAwesomeIcon icon={faSave} />
             </ClearButton>
           ) : (
@@ -388,17 +378,7 @@ const BasicInfo = () => {
   if (user.isLoading) return <Loading>Loading Basic Profile...</Loading>;
   if (user.isError)
     return (
-      <Error
-        css={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-          mw: 200,
-          gap: 5,
-          mx: "auto",
-        }}
-      >
+      <Error>
         <Icon icon={faWarning} fontSize={30} css={{ color: "$error" }} />
         <Text>Failed to load basic user data, check console for more info</Text>
       </Error>
@@ -429,9 +409,7 @@ const BasicInfo = () => {
         <UpdateEmail email={user.data!.email} />
         <Spacer y={0.25} />
         {!user.data?.emailVerified ? (
-          <VerifyRow
-            css={{ display: "flex", alignItems: "center", gap: "5px" }}
-          >
+          <VerifyRow>
             {verifyEmail.isSuccess ? (
               <Text small color="success">
                 Sent verification email, check your inbox!
@@ -678,17 +656,7 @@ const SessionInfo = () => {
   if (sessions.isLoading) return <Loading>Loading Sessions...</Loading>;
   if (sessions.isError)
     return (
-      <Error
-        css={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-          mw: 200,
-          gap: 5,
-          mx: "auto",
-        }}
-      >
+      <Error>
         <Icon icon={faWarning} fontSize={30} css={{ color: "$error" }} />
         <Text>Failed to load session data, check console for more info</Text>
       </Error>
@@ -793,8 +761,6 @@ const SelectMethod: FC<{
     </>
   );
 };
-
-// const Icon = styled(FontAwesomeIcon);
 
 const appMethodFirstStepSchema = z.object({
   name: z
@@ -1064,17 +1030,7 @@ const TwoFactor = () => {
   if (methods.isLoading) return <Loading>Loading 2FA Methods...</Loading>;
   if (methods.isError)
     return (
-      <Error
-        css={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-          mw: 200,
-          gap: 5,
-          mx: "auto",
-        }}
-      >
+      <Error>
         <Icon icon={faWarning} fontSize={30} css={{ color: "$error" }} />
         <Text>Failed to load 2fa methods, check console for more info</Text>
       </Error>
@@ -1124,9 +1080,9 @@ const TwoFactor = () => {
   );
 };
 
-const Error = styled("div");
-const Icon = styled(FontAwesomeIcon);
-const Avatar = styled("div");
+const Avatar = styled("div", {
+  position: "relative",
+});
 
 const Main = () => {
   const router = useRouter();
@@ -1194,16 +1150,7 @@ const Main = () => {
         }}
         fluid
       >
-        <Error
-          css={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            textAlign: "center",
-            mw: 200,
-            gap: 5,
-          }}
-        >
+        <Error>
           <Icon icon={faWarning} fontSize={30} css={{ color: "$error" }} />
           <Text>Failed to load user data, check console for more info</Text>
         </Error>
@@ -1217,19 +1164,8 @@ const Main = () => {
       <Head>
         <title>Dashboard</title>
       </Head>
-      <Header
-        css={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          mt: 25,
-        }}
-      >
-        <Avatar
-          css={{
-            position: "relative",
-          }}
-        >
+      <Header>
+        <Avatar>
           <Image
             src={
               user.data!.avatarUrl ??

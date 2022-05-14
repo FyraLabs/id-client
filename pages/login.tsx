@@ -7,7 +7,6 @@ import {
   Spacer,
   Text,
   Image,
-  styled,
   Link,
   Loading,
   Card,
@@ -26,8 +25,7 @@ import Head from "next/head";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faClock } from "@fortawesome/free-solid-svg-icons";
 import { CodeInput } from "../components/CodeInput";
-
-const Form = styled("form");
+import { AuthForm } from "../components/AuthForm";
 
 interface LoginForm {
   email: string;
@@ -263,7 +261,7 @@ const Login = () => {
                 </Text>
               </Col>
             ) : (
-              <Form
+              <AuthForm
                 css={{ display: "flex", flexDirection: "column" }}
                 onSubmit={handleSubmit(async (data) => {
                   try {
@@ -334,7 +332,7 @@ const Login = () => {
                 >
                   <Link css={{ fontSize: 15 }}>Dont have an account?</Link>
                 </NextLink>
-              </Form>
+              </AuthForm>
             )}
           </div>
         </Col>

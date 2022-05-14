@@ -1,12 +1,10 @@
 import { faCheckCircle, faWarning } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Container, Loading, styled, Text } from "@nextui-org/react";
+import { Container, Loading, Text } from "@nextui-org/react";
 import { useEffect, useState } from "react";
 import { useMutation } from "react-query";
 import { api } from "../util/api";
-
-const Icon = styled(FontAwesomeIcon);
-const Error = styled("div");
+import { Error } from "../components/Error";
+import { Icon } from "../components/Icon";
 
 const VerifyEmail = () => {
   const [showError, setShowError] = useState(false);
@@ -51,16 +49,7 @@ const VerifyEmail = () => {
         }}
         fluid
       >
-        <Error
-          css={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            textAlign: "center",
-            mw: 200,
-            gap: 5,
-          }}
-        >
+        <Error>
           <Icon icon={faWarning} fontSize={30} css={{ color: "$error" }} />
           <Text>
             Failed to verify email address, this token is probably expired.
