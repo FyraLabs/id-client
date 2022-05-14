@@ -40,6 +40,7 @@ import {
   FC,
   SetStateAction,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -702,9 +703,9 @@ const LogOut = () => {
       ).data,
     {
       onSuccess: () => {
-        queryClient.clear();
+        router.replace("/login");
         setToken(null);
-        return router.replace("/login");
+        queryClient.clear();
       },
     }
   );
@@ -1137,7 +1138,7 @@ const UserAvatar = () => {
           >
             {uploadAvatar.isLoading ? <Loading size="xs" /> : "Upload Avatar"}
           </Button>
-          {me.data!.avatarURL ? (
+          {me.data?.avatarURL ? (
             <Button
               color="error"
               disabled={resetAvatar.isLoading || uploadAvatar.isLoading}
@@ -1158,7 +1159,7 @@ const UserAvatar = () => {
       <Avatar>
         <Image
           src={
-            me.data!.avatarURL ??
+            me.data?.avatarURL ??
             `https://hashvatar.vercel.app/${me.data!.id}/stagger`
           }
           objectFit="cover"
@@ -1195,7 +1196,7 @@ const Main = () => {
   const [updateMessage, setUpdateMessage] = useState("");
   const me = useMe();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!token) router.push("/login");
 
     let items: string[] = [
@@ -1242,6 +1243,8 @@ const Main = () => {
         </Error>
       </Container>
     );
+
+  if (!token) return <></>;
 
   return (
     <Container
