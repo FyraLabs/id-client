@@ -8,6 +8,8 @@ import {
   faClock,
   faCopy,
   faCamera,
+  faFileUpload,
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   Button,
@@ -32,13 +34,14 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/router";
-import { Auth } from "../util/auth";
+import { Auth, useMe } from "../util/auth";
 import {
   Dispatch,
   FC,
   SetStateAction,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
@@ -833,34 +836,14 @@ const ConfirmAppMethod: FC<{
 };
 
 const AppMethod: FC<{ closeModal: () => void }> = ({ closeModal }) => {
-  const { token } = Auth.useContainer();
-  const user = useQuery(
-    ["me"],
-    async () =>
-      (
-        await api.get<{
-          id: string;
-          email: string;
-          name: string;
-          emailVerified: boolean;
-        }>("/user/me", {
-          headers: {
-            Authorization: token!,
-          },
-        })
-      ).data,
-    {
-      enabled: !!token,
-    }
-  );
-
+  const me = useMe();
   const totp = useMemo(
     () =>
       new TOTP({
         issuer: "FyraLabs",
-        label: user.data?.email,
+        label: me.data?.email,
       }),
-    [user.data?.name]
+    [me.data?.name]
   );
 
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -1084,30 +1067,133 @@ const Avatar = styled("div", {
   position: "relative",
 });
 
+const UserAvatar = () => {
+  const me = useMe();
+  const avatarModal = useModal();
+  const auth = Auth.useContainer();
+  const queryClient = useQueryClient();
+  const resetAvatar = useMutation(
+    () =>
+      api.delete("/user/me/avatar", {
+        headers: {
+          Authorization: auth.token!,
+        },
+      }),
+    {
+      onSuccess: () => {
+        // TODO: Make this cleaner than a refresh
+        queryClient.refetchQueries(["me"]);
+      },
+    }
+  );
+  const uploadAvatar = useMutation(
+    (file: File) => {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      return api.put("/user/me/avatar", formData, {
+        headers: {
+          Authorization: auth.token!,
+        },
+      });
+    },
+    {
+      onSuccess: () => {
+        // TODO: Make this cleaner than a refresh
+        queryClient.refetchQueries(["me"]);
+      },
+    }
+  );
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <>
+      <input
+        type="file"
+        id="file"
+        ref={inputRef}
+        style={{ display: "none" }}
+        accept="image/png, image/jpeg, image/webp"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          await uploadAvatar.mutateAsync(file);
+          avatarModal.setVisible(false);
+        }}
+      />
+      <Modal {...avatarModal.bindings} closeButton blur>
+        <Modal.Header>
+          <Text size={18} weight="bold">
+            Update Avatar
+          </Text>
+        </Modal.Header>
+        <Modal.Body>
+          <Button
+            disabled={resetAvatar.isLoading || uploadAvatar.isLoading}
+            icon={<FontAwesomeIcon icon={faFileUpload} />}
+            onClick={() => {
+              inputRef.current?.click();
+            }}
+          >
+            {uploadAvatar.isLoading ? <Loading size="xs" /> : "Upload Avatar"}
+          </Button>
+          {me.data!.avatarURL ? (
+            <Button
+              color="error"
+              disabled={resetAvatar.isLoading || uploadAvatar.isLoading}
+              icon={<FontAwesomeIcon icon={faTrash} />}
+              onClick={async () => {
+                await resetAvatar.mutateAsync();
+                avatarModal.setVisible(false);
+              }}
+            >
+              {resetAvatar.isLoading ? <Loading size="xs" /> : "Reset Avatar"}
+            </Button>
+          ) : (
+            <></>
+          )}
+        </Modal.Body>
+        <Modal.Footer />
+      </Modal>
+      <Avatar>
+        <Image
+          src={
+            me.data!.avatarURL ??
+            `https://hashvatar.vercel.app/${me.data!.id}/stagger`
+          }
+          objectFit="cover"
+          css={{ borderRadius: "50%", aspectRatio: "1 / 1", maxW: 125 }}
+          alt={me.data?.name + "'s avatar"}
+        />
+        <Button
+          color="primary"
+          css={{
+            position: "absolute",
+            right: 5,
+            bottom: 5,
+            width: 25,
+            height: 25,
+            p: 7,
+            borderRadius: "50%",
+          }}
+          auto
+          onClick={() => avatarModal.setVisible(true)}
+        >
+          <Icon
+            icon={faCamera}
+            css={{ position: "absolute", color: "$white" }}
+          />
+        </Button>
+      </Avatar>
+    </>
+  );
+};
+
 const Main = () => {
   const router = useRouter();
   const { token } = Auth.useContainer();
   const [updateMessage, setUpdateMessage] = useState("");
-  const user = useQuery(
-    ["me"],
-    async () =>
-      (
-        await api.get<{
-          id: string;
-          email: string;
-          name: string;
-          emailVerified: boolean;
-          avatarUrl: string;
-        }>("/user/me", {
-          headers: {
-            Authorization: token!,
-          },
-        })
-      ).data,
-    {
-      enabled: !!token,
-    }
-  );
+  const me = useMe();
 
   useEffect(() => {
     if (!token) router.push("/login");
@@ -1124,7 +1210,7 @@ const Main = () => {
     setUpdateMessage(items[Math.floor(Math.random() * items.length)]);
   }, [router, token]);
 
-  if (user.isLoading)
+  if (me.isLoading)
     return (
       <Container
         css={{
@@ -1139,7 +1225,7 @@ const Main = () => {
       </Container>
     );
 
-  if (user.isError)
+  if (me.isError)
     return (
       <Container
         css={{
@@ -1165,47 +1251,9 @@ const Main = () => {
         <title>Dashboard</title>
       </Head>
       <Header>
-        <Avatar>
-          <Image
-            src={
-              user.data!.avatarUrl ??
-              `https://hashvatar.vercel.app/${user.data!.id}/stagger`
-            }
-            objectFit="cover"
-            css={{ borderRadius: "50%", aspectRatio: "1 / 1", maxW: 125 }}
-            alt={user.data?.name + "'s avatar"}
-          />
-          <Popover placement="right">
-            <Popover.Trigger>
-              <Button
-                color="primary"
-                css={{
-                  position: "absolute",
-                  right: 5,
-                  bottom: 5,
-                  width: 25,
-                  height: 25,
-                  p: 7,
-                  borderRadius: "50%",
-                }}
-                auto
-              >
-                <Icon
-                  icon={faCamera}
-                  css={{ position: "absolute", color: "$white" }}
-                />
-              </Button>
-            </Popover.Trigger>
-            <Popover.Content>
-              <Button.Group vertical>
-                <Button>Upload Avatar</Button>
-                <Button>Remove Avatar</Button>
-              </Button.Group>
-            </Popover.Content>
-          </Popover>
-        </Avatar>
+        <UserAvatar />
         <Text h1 css={{ textAlign: "center" }} size="2.25rem">
-          Welcome Back, {user.data?.name}
+          Welcome Back, {me.data?.name}
         </Text>
         <Text
           h2

@@ -2,6 +2,8 @@ import { createContainer } from "@fyralabs/state";
 import { useMemo } from "react";
 import { useLocalStorage } from "usehooks-ts";
 import decode from "jwt-decode";
+import { useQuery } from "react-query";
+import { api } from "./api";
 
 export const Auth = createContainer(() => {
   const [token, setToken] = useLocalStorage<string | null>(
@@ -21,3 +23,30 @@ export const Auth = createContainer(() => {
     sessionID,
   };
 });
+
+export const useMe = () => {
+  const { token } = Auth.useContainer();
+
+  const user = useQuery(
+    ["me"],
+    async () =>
+      (
+        await api.get<{
+          id: string;
+          email: string;
+          name: string;
+          emailVerified: boolean;
+          avatarURL: string;
+        }>("/user/me", {
+          headers: {
+            Authorization: token!,
+          },
+        })
+      ).data,
+    {
+      enabled: !!token,
+    }
+  );
+
+  return user;
+};
