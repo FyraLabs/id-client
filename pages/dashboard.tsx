@@ -1163,8 +1163,12 @@ const UserAvatar = () => {
             `https://hashvatar.fyralabs.com/${me.data!.id}/stagger`
           }
           objectFit="cover"
-          css={{ borderRadius: "50%", aspectRatio: "1 / 1", maxW: 125 }}
+          css={{ borderRadius: "50%" }}
+          containerCss={{ borderRadius: "50%" }}
           alt={me.data?.name + "'s avatar"}
+          showSkeleton
+          width={125}
+          height={125}
         />
         <Button
           color="primary"
