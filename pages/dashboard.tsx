@@ -1160,7 +1160,7 @@ const UserAvatar = () => {
         <Image
           src={
             me.data?.avatarURL ??
-            `https://hashvatar.vercel.app/${me.data!.id}/stagger`
+            `https://hashvatar.fyralabs.com/${me.data!.id}/stagger`
           }
           objectFit="cover"
           css={{ borderRadius: "50%", aspectRatio: "1 / 1", maxW: 125 }}
