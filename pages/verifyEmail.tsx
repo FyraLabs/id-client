@@ -21,7 +21,7 @@ const VerifyEmail = () => {
     }
 
     verifyEmail.mutate(token);
-  }, [verifyEmail]);
+  }, []);
 
   if (verifyEmail.isLoading)
     return (
