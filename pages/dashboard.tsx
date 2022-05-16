@@ -1197,22 +1197,10 @@ const UserAvatar = () => {
 const Main = () => {
   const router = useRouter();
   const { token } = Auth.useContainer();
-  const [updateMessage, setUpdateMessage] = useState("");
   const me = useMe();
 
   useLayoutEffect(() => {
     if (!token) router.push("/login");
-
-    let items: string[] = [
-      "Syncing the databases",
-      "Aquiring the companies",
-      "Getting users on the cashapp",
-      "Writing code",
-      "Racking up HR Complaints",
-      "Attaining the bag",
-    ];
-
-    setUpdateMessage(items[Math.floor(Math.random() * items.length)]);
   }, [router, token]);
 
   if (me.isLoading)
@@ -1261,14 +1249,6 @@ const Main = () => {
         <UserAvatar />
         <Text h1 css={{ textAlign: "center" }} size="2.25rem">
           Welcome Back, {me.data?.name}
-        </Text>
-        <Text
-          h2
-          color="primary"
-          css={{ mt: 0, display: "flex", alignItems: "center", gap: 5 }}
-          size="0.875rem"
-        >
-          {updateMessage} <Loading type="points-opacity" />
         </Text>
       </Header>
       {/* <Text size={30} weight="bold">
