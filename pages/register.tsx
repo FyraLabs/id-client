@@ -60,6 +60,9 @@ const Register = () => {
     useForm<RegisterForm>({
       resolver: zodResolver(schema),
       mode: "onTouched",
+      defaultValues: {
+        agree: false,
+      },
     });
   const { token, setToken } = Auth.useContainer();
 
@@ -171,10 +174,11 @@ const Register = () => {
               render={({ field }) => {
                 return (
                   <Checkbox
+                    ref={field.ref}
                     isSelected={field.value}
                     name={field.name}
-                    onClick={() => field.onBlur()}
-                    onChange={(e) => field.onChange(e.valueOf())}
+                    onFocusChange={() => field.onBlur()}
+                    onChange={(e) => field.onChange(e)}
                   >
                     <Text>
                       I agree to the <Link href="#">Terms & Conditions</Link>
