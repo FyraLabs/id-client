@@ -175,7 +175,13 @@ const Login = () => {
         <title>Login</title>
       </Head>
       <Row css={{ minHeight: "100vh" }} align="center">
-        <Col>
+        <Col
+          css={{
+            "@smMax": {
+              display: "none",
+            },
+          }}
+        >
           {/* NOTE: Accent #0070f3 */}
           <Image
             style={{ maxWidth: 500, margin: "auto" }}

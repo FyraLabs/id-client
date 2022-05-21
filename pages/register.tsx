@@ -81,7 +81,13 @@ const Register = () => {
         <title>Register</title>
       </Head>
       <Row css={{ minHeight: "100vh" }} align="center">
-        <Col>
+        <Col
+          css={{
+            "@smMax": {
+              display: "none",
+            },
+          }}
+        >
           <Image
             style={{ maxWidth: 500, margin: "auto" }}
             src="/dawn.svg"
