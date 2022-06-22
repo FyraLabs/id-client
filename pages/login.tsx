@@ -52,7 +52,7 @@ const SecondFactorCard: FC<{
   onClick: () => void;
 }> = ({ name, onClick }) => {
   return (
-    <Card clickable onClick={onClick}>
+    <Card isPressable onClick={onClick}>
       <Row css={{ alignItems: "center", gap: 10 }}>
         <FontAwesomeIcon icon={faClock} fixedWidth fontSize={20} />
         <Text weight="bold">{name}</Text>
