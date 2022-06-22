@@ -403,7 +403,7 @@ const BasicInfo = () => {
           closeModal={() => updatePasswordModal.setVisible(false)}
         />
       </Modal>
-      <Card>
+      <Card css={{ px: 20, py: 12 }}>
         <Text size={20} weight="bold">
           Basic Info
         </Text>
@@ -667,7 +667,7 @@ const SessionInfo = () => {
     );
 
   return (
-    <Card>
+    <Card css={{ px: 20, py: 12 }}>
       <Text size={20} weight="bold">
         Sessions
       </Text>
@@ -713,7 +713,7 @@ const LogOut = () => {
   return (
     <Button
       color="secondary"
-      css={{ w: "100%" }}
+      css={{ w: "100%", mb: 25 }}
       auto
       disabled={revokeSession.isLoading}
       onClick={() => revokeSession.mutate()}
@@ -1037,7 +1037,7 @@ const TwoFactor = () => {
           <Text>Not implemented</Text>
         )}
       </Modal>
-      <Card>
+      <Card css={{ px: 20, py: 12 }}>
         <Text size={20} weight="bold">
           2FA
         </Text>
